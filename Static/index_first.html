@@ -1,78 +1,468 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web Interview Recorder</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        #app {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        h2 {
+            color: #555;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        
+        h3 {
+            color: #667eea;
+            margin: 20px 0 10px 0;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 15px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 5px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        .video-container {
+            position: relative;
+            display: inline-block;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin: 20px 0;
+        }
+        
+        #preview {
+            display: block;
+            width: 640px;
+            height: 480px;
+            background: #000;
+        }
+        
+        #output_canvas {
+            position: absolute;
+            left: 0;
+            top: 0;
+            pointer-events: none;
+            display: none;
+        }
+        
+        #ai-warning {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            color: #856404;
+            font-weight: bold;
+            font-size: 18px;
+            text-align: center;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #ai-warning:empty {
+            display: none;
+        }
+        
+        .status-text {
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        .status-info {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .status-success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .status-error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
+        .status-warning {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+        
+        strong {
+            color: #667eea;
+        }
+        
+        p {
+            line-height: 1.6;
+            margin: 10px 0;
+            color: #555;
+        }
+        
+        .question-box {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+        
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        @media (max-width: 768px) {
+            #app {
+                padding: 20px;
+            }
+            
+            #preview, #output_canvas {
+                width: 100%;
+                height: auto;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
 </head>
 <body>
     <div id="app">
-        <!-- Bước 1: Nhập token và tên -->
         <div id="step-token" style="display: block;">
             <h1>Web Interview Recorder</h1>
-            <h2>Bước 1: Xác thực</h2>
-            <label>Token: <input type="text" id="token" value="demo123"></label><br><br>
-            <label>Họ tên: <input type="text" id="userName" placeholder="Nguyễn Văn A"></label><br><br>
-            <button onclick="verifyAndStart()">Bắt đầu phỏng vấn</button>
-            <p id="token-status"></p>
+            <h2>Buoc 1: Xac thuc</h2>
+            <label>Token: <input type="text" id="token" value="demo123" placeholder="Nhap token cua ban"></label>
+            <label>Ho ten: <input type="text" id="userName" placeholder="Nguyen Van A"></label>
+            <button onclick="verifyAndStart()">Bat dau phong van</button>
+            <p id="token-status" class="status-text"></p>
         </div>
 
-        <!-- Bước 2: Xin quyền camera/microphone -->
         <div id="step-permission" style="display: none;">
-            <h2>Bước 2: Cấp quyền</h2>
-            <p>Vui lòng cấp quyền truy cập camera và microphone</p>
-            <button onclick="requestPermissions()">Cấp quyền</button>
-            <p id="permission-status"></p>
+            <h1>Web Interview Recorder</h1>
+            <h2>Buoc 2: Cap quyen</h2>
+            <p>Vui long cap quyen truy cap camera va microphone de tiep tuc.</p>
+            <button onclick="requestPermissions()">Cap quyen Camera & Microphone</button>
+            <p id="permission-status" class="status-text"></p>
         </div>
 
-        <!-- Bước 3: Phỏng vấn -->
         <div id="step-interview" style="display: none;">
-            <h2>Phỏng vấn</h2>
-            <p>Thư mục lưu: <strong id="folder-name"></strong></p>
+            <h1>Web Interview Recorder</h1>
+            <h2>Dang phong van</h2>
+            <p>Thu muc luu: <strong id="folder-name"></strong></p>
             
-            <!-- Video preview -->
-            <video id="preview" width="640" height="480" autoplay muted></video>
-            <br>
+            <div class="video-container">
+                <video id="preview" width="640" height="480" autoplay muted></video>
+                <canvas id="output_canvas" width="640" height="480"></canvas>
+            </div>
             
-            <!-- Hiển thị câu hỏi hiện tại -->
-            <h3>Câu hỏi <span id="current-question-num">1</span>/5</h3>
-            <p id="current-question-text"></p>
+            <div id="ai-warning"></div>
             
-            <!-- Trạng thái -->
-            <p>Trạng thái: <strong id="recording-status">Chưa ghi</strong></p>
-            <p id="upload-status"></p>
+            <div class="question-box">
+                <h3>Cau hoi <span id="current-question-num">1</span>/5</h3>
+                <p id="current-question-text" style="font-size: 1.1em; color: #333;"></p>
+            </div>
             
-            <!-- Nút điều khiển -->
-            <button id="btn-start-record" onclick="startRecording()">Bắt đầu ghi</button>
-            <button id="btn-stop-record" onclick="stopRecording()" disabled>Dừng ghi</button>
-            <button id="btn-next" onclick="nextQuestion()" disabled>Câu tiếp theo</button>
-            <button id="btn-retry" onclick="retryUpload()" style="display: none;">Thử lại upload</button>
-            <button id="btn-finish" onclick="finishInterview()" style="display: none;">Hoàn thành</button>
+            <p>Trang thai: <strong id="recording-status">San sang</strong></p>
+            <p id="upload-status" class="status-text"></p>
+            
+            <div class="button-group">
+                <button id="btn-start-record" onclick="startRecording()">Bat dau ghi</button>
+                <button id="btn-stop-record" onclick="stopRecording()" disabled>Dung ghi</button>
+                <button id="btn-next" onclick="nextQuestion()" disabled>Cau tiep theo</button>
+                <button id="btn-retry" onclick="retryUpload()" style="display: none;">Thu lai upload</button>
+                <button id="btn-finish" onclick="finishInterview()" style="display: none;">Hoan thanh</button>
+            </div>
         </div>
 
-        <!-- Bước 4: Hoàn thành -->
         <div id="step-complete" style="display: none;">
-            <h2>Hoàn thành!</h2>
-            <p>Cảm ơn bạn đã hoàn thành phỏng vấn.</p>
-            <p>Thư mục lưu: <strong id="final-folder-name"></strong></p>
-            <p>Số câu hỏi đã trả lời: <strong id="total-questions"></strong></p>
+            <h1>Hoan thanh!</h1>
+            <h2>Cam on ban da hoan thanh phong van</h2>
+            <div style="background: #e8f5e9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <p>Thu muc luu: <strong id="final-folder-name"></strong></p>
+                <p>So cau hoi da tra loi: <strong id="total-questions"></strong></p>
+            </div>
+            <p>Cac video cua ban da duoc luu thanh cong. Chung toi se lien he voi ban som!</p>
         </div>
     </div>
 
     <script>
-        // Cấu hình
-        const API_BASE = '';  // Để trống nếu cùng domain
+        let faceMesh;
+        let camera;
+        let aiAnalysis = {
+            totalFrames: 0,
+            lookingAwayFrames: 0,
+            multipleFacesFrames: 0,
+            noFaceFrames: 0,
+            warnings: []
+        };
+        let isAiRunning = false;
+
+        let violationStartTime = null;
+        const VIOLATION_THRESHOLD_MS = 10000;
+
+        async function initAI() {
+            const videoElement = document.getElementById('preview');
+
+            function getDistance(p1, p2) {
+                return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+            }
+
+            function getHorizontalGazeRatio(p_iris, p_left_corner, p_right_corner) {
+                const dist_total = getDistance(p_left_corner, p_right_corner);
+                const dist_to_left = getDistance(p_iris, p_left_corner);
+                return dist_to_left / dist_total;
+            }
+
+            function getVerticalGazeRatio(p_iris, p_top_eyelid, p_bottom_eyelid) {
+                const dist_total = getDistance(p_top_eyelid, p_bottom_eyelid);
+                const dist_to_top = getDistance(p_iris, p_top_eyelid);
+                
+                if (dist_total < 0.005) return 0.5;
+                
+                return dist_to_top / dist_total;
+            }
+
+            function getEyeOpenRatio(p_top, p_bottom, p_inner, p_outer) {
+                const height = getDistance(p_top, p_bottom);
+                const width = getDistance(p_inner, p_outer);
+                return height / width;
+            }
+
+            function onResults(results) {
+                if (!isAiRunning) return;
+
+                aiAnalysis.totalFrames++;
+                let warningMsg = "";
+                let isViolation = false;
+                let currentViolationType = "";
+
+                if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+                    if (results.multiFaceLandmarks.length > 1) {
+                        isViolation = true;
+                        currentViolationType = "PHAT HIEN NGUOI LA!";
+                        aiAnalysis.multipleFacesFrames++;
+                        aiAnalysis.lookingAwayFrames++;
+                        warningMsg = currentViolationType;
+                        if (!aiAnalysis.warnings.includes(currentViolationType)) {
+                            aiAnalysis.warnings.push(currentViolationType);
+                        }
+                    } else {
+                        const landmarks = results.multiFaceLandmarks[0];
+
+                        const nose = landmarks[1];
+                        const leftEar = landmarks[234];
+                        const rightEar = landmarks[454];
+                        const yawRatio = Math.abs(nose.x - leftEar.x) / (Math.abs(nose.x - rightEar.x) + 0.001);
+
+                        const midEyeY = (landmarks[33].y + landmarks[263].y) / 2;
+                        const mouthY = (landmarks[13].y + landmarks[14].y) / 2;
+                        const noseY = landmarks[1].y;
+                        const pitchRatio = Math.abs(noseY - midEyeY) / (Math.abs(mouthY - noseY) + 0.001);
+
+                        const r_iris = landmarks[468];
+                        const r_top = landmarks[159];
+                        const r_bottom = landmarks[145];
+                        const r_inner = landmarks[133];
+                        const r_outer = landmarks[33];
+
+                        const l_iris = landmarks[473];
+                        const l_top = landmarks[386];
+                        const l_bottom = landmarks[374];
+                        const l_inner = landmarks[362];
+                        const l_outer = landmarks[263];
+
+                        const gazeH_Right = getHorizontalGazeRatio(r_iris, r_outer, r_inner);
+                        const gazeH_Left = getHorizontalGazeRatio(l_iris, l_inner, l_outer);
+
+                        const gazeV_Right = getVerticalGazeRatio(r_iris, r_top, r_bottom);
+                        const gazeV_Left = getVerticalGazeRatio(l_iris, l_top, l_bottom);
+
+                        const openRatioRight = getEyeOpenRatio(r_top, r_bottom, r_inner, r_outer);
+                        const openRatioLeft = getEyeOpenRatio(l_top, l_bottom, l_inner, l_outer);
+
+                        if (yawRatio < 0.3 || yawRatio > 3.0) {
+                            isViolation = true;
+                            currentViolationType = "NHIN THANG DI BAN OI!";
+                        }
+                        else if (pitchRatio < 0.6) {
+                            isViolation = true;
+                            currentViolationType = "CUP PHA XUONG BAN OI!";
+                        } else if (pitchRatio > 1.6) {
+                            isViolation = true;
+                            currentViolationType = "NGANG MAT LEN BAN OI!";
+                        }
+                        else {
+                            const isGlancingH = (gazeH_Right < 0.25 || gazeH_Right > 0.75) && 
+                                              (gazeH_Left < 0.25 || gazeH_Left > 0.75);
+                            
+                            const isGlancingV = (gazeV_Right < 0.1 || gazeV_Right > 0.9) && 
+                                              (gazeV_Left < 0.1 || gazeV_Left > 0.9);
+
+                            if (isGlancingH) {
+                                isViolation = true;
+                                currentViolationType = "NHIN THANG DI BAN OI!";
+                            } else if (isGlancingV) {
+                                isViolation = true;
+                                currentViolationType = "NHIN THANG DI BAN OI!";
+                            }
+                        }
+                    }
+                } else {
+                    isViolation = true;
+                    currentViolationType = "DI DAU VAY BAN OI";
+                    aiAnalysis.noFaceFrames++;
+                    aiAnalysis.lookingAwayFrames++;
+                    warningMsg = currentViolationType;
+                    if (!aiAnalysis.warnings.includes(currentViolationType)) {
+                        aiAnalysis.warnings.push(currentViolationType);
+                    }
+                }
+
+                if (isViolation && currentViolationType !== "PHAT HIEN NGUOI LA!" && currentViolationType !== "KHONG TIM THAY KHUON MAT") {
+                    aiAnalysis.lookingAwayFrames++;
+                    
+                    if (violationStartTime === null) {
+                        violationStartTime = Date.now();
+                    }
+                    
+                    const violationDuration = Date.now() - violationStartTime;
+                    
+                    if (violationDuration >= VIOLATION_THRESHOLD_MS) {
+                        warningMsg = currentViolationType;
+                        
+                        if (!aiAnalysis.warnings.includes(currentViolationType)) {
+                            aiAnalysis.warnings.push(currentViolationType);
+                        }
+                    }
+                } else if (!isViolation) {
+                    violationStartTime = null;
+                }
+            
+                const warningEl = document.getElementById('ai-warning');
+                if (warningMsg) {
+                    warningEl.textContent = warningMsg;
+                } else {
+                    warningEl.textContent = "";
+                }
+            }
+
+            faceMesh = new FaceMesh({locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+            }});
+            
+            faceMesh.setOptions({
+                maxNumFaces: 2,
+                refineLandmarks: true,
+                minDetectionConfidence: 0.5,
+                minTrackingConfidence: 0.5
+            });
+            
+            faceMesh.onResults(onResults);
+
+            camera = new Camera(videoElement, {
+                onFrame: async () => {
+                    if (isAiRunning) {
+                        await faceMesh.send({image: videoElement});
+                    }
+                },
+                width: 640,
+                height: 480
+            });
+            
+            camera.start();
+        }
+
+        const API_BASE = '';
         const QUESTIONS = [
-            "Hãy giới thiệu về bản thân bạn",
-            "Tại sao bạn muốn làm việc tại công ty chúng tôi?",
-            "Điểm mạnh và điểm yếu của bạn là gì?",
-            "Mô tả một dự án bạn tự hào nhất",
-            "Bạn có câu hỏi gì cho chúng tôi không?"
+            "Hay gioi thieu ve ban than ban",
+            "Tai sao ban muon lam viec tai cong ty chung toi?",
+            "Diem manh va diem yeu cua ban la gi?",
+            "Mo ta mot du an ban tu hao nhat",
+            "Ban co cau hoi gi cho chung toi khong?"
         ];
         const MAX_RETRIES = 3;
-        const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+        const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
-        // Biến toàn cục
         let token = '';
         let userName = '';
         let folder = '';
@@ -82,21 +472,20 @@
         let stream = null;
         let uploadRetryCount = 0;
 
-        // === Bước 1: Verify token và start session ===
         async function verifyAndStart() {
             token = document.getElementById('token').value.trim();
             userName = document.getElementById('userName').value.trim();
             
             if (!token || !userName) {
-                alert('Vui lòng nhập token và họ tên');
+                alert('Vui long nhap token va ho ten');
                 return;
             }
 
             const statusEl = document.getElementById('token-status');
-            statusEl.textContent = 'Đang xác thực...';
+            statusEl.textContent = 'Dang xac thuc...';
+            statusEl.className = 'status-text status-info';
 
             try {
-                // Verify token
                 const verifyRes = await fetch(`${API_BASE}/api/verify-token`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -105,10 +494,9 @@
 
                 if (!verifyRes.ok) {
                     const error = await verifyRes.json();
-                    throw new Error(error.detail || 'Token không hợp lệ');
+                    throw new Error(error.detail || 'Token khong hop le');
                 }
 
-                // Start session
                 const startRes = await fetch(`${API_BASE}/api/session/start`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -117,28 +505,30 @@
 
                 if (!startRes.ok) {
                     const error = await startRes.json();
-                    throw new Error(error.detail || 'Không thể tạo phiên làm việc');
+                    throw new Error(error.detail || 'Khong the tao phien lam viec');
                 }
 
                 const data = await startRes.json();
                 folder = data.folder;
 
-                statusEl.textContent = 'Xác thực thành công!';
+                statusEl.textContent = 'Xac thuc thanh cong!';
+                statusEl.className = 'status-text status-success';
                 
-                // Chuyển sang bước xin quyền
-                document.getElementById('step-token').style.display = 'none';
-                document.getElementById('step-permission').style.display = 'block';
+                setTimeout(() => {
+                    document.getElementById('step-token').style.display = 'none';
+                    document.getElementById('step-permission').style.display = 'block';
+                }, 1000);
 
             } catch (error) {
-                statusEl.textContent = 'Lỗi: ' + error.message;
-                statusEl.style.color = 'red';
+                statusEl.textContent = 'Loi: ' + error.message;
+                statusEl.className = 'status-text status-error';
             }
         }
 
-        // === Bước 2: Request camera/microphone ===
         async function requestPermissions() {
             const statusEl = document.getElementById('permission-status');
-            statusEl.textContent = 'Đang xin quyền...';
+            statusEl.textContent = 'Dang xin quyen...';
+            statusEl.className = 'status-text status-info';
 
             try {
                 stream = await navigator.mediaDevices.getUserMedia({
@@ -146,49 +536,47 @@
                     audio: true
                 });
 
-                // Hiển thị preview
                 document.getElementById('preview').srcObject = stream;
+                statusEl.textContent = 'Da cap quyen!';
+                statusEl.className = 'status-text status-success';
 
-                statusEl.textContent = 'Đã cấp quyền!';
+                await initAI();
 
-                // Chuyển sang bước phỏng vấn
                 setTimeout(() => {
                     document.getElementById('step-permission').style.display = 'none';
                     document.getElementById('step-interview').style.display = 'block';
                     document.getElementById('folder-name').textContent = folder;
                     loadQuestion(0);
-                }, 1000);
+                }, 1500);
 
             } catch (error) {
-                statusEl.textContent = 'Lỗi: ' + error.message;
-                statusEl.style.color = 'red';
-                alert('Không thể truy cập camera/microphone. Vui lòng kiểm tra quyền trình duyệt.');
+                statusEl.textContent = 'Loi: ' + error.message;
+                statusEl.className = 'status-text status-error';
+                alert('Khong the truy cap camera/microphone. Vui long kiem tra quyen trinh duyet.');
             }
         }
 
-        // === Load câu hỏi ===
         function loadQuestion(index) {
             currentQuestionIndex = index;
             document.getElementById('current-question-num').textContent = index + 1;
             document.getElementById('current-question-text').textContent = QUESTIONS[index];
-            document.getElementById('recording-status').textContent = 'Sẵn sàng';
+            document.getElementById('recording-status').textContent = 'San sang';
             document.getElementById('upload-status').textContent = '';
+            document.getElementById('upload-status').className = 'status-text';
             
-            // Reset buttons
             document.getElementById('btn-start-record').disabled = false;
             document.getElementById('btn-stop-record').disabled = true;
             document.getElementById('btn-next').disabled = true;
             document.getElementById('btn-retry').style.display = 'none';
             
-            // Hiển thị nút Finish nếu đã hết câu hỏi
             if (index >= QUESTIONS.length - 1) {
                 document.getElementById('btn-finish').style.display = 'inline-block';
             }
         }
 
-        // === Bắt đầu ghi ===
         function startRecording() {
             recordedChunks = [];
+            violationStartTime = null;
             
             mediaRecorder = new MediaRecorder(stream, {
                 mimeType: 'video/webm;codecs=vp8,opus'
@@ -204,23 +592,32 @@
                 uploadVideo();
             };
 
+            aiAnalysis = {
+                totalFrames: 0,
+                lookingAwayFrames: 0,
+                multipleFacesFrames: 0,
+                noFaceFrames: 0,
+                warnings: []
+            };
+            isAiRunning = true;
+            
             mediaRecorder.start();
             
-            document.getElementById('recording-status').textContent = 'Đang ghi...';
+            document.getElementById('recording-status').textContent = 'Dang ghi...';
             document.getElementById('btn-start-record').disabled = true;
             document.getElementById('btn-stop-record').disabled = false;
         }
 
-        // === Dừng ghi ===
         function stopRecording() {
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 mediaRecorder.stop();
-                document.getElementById('recording-status').textContent = 'Đã dừng';
+                isAiRunning = false;
+                violationStartTime = null;
+                document.getElementById('recording-status').textContent = 'Da dung';
                 document.getElementById('btn-stop-record').disabled = true;
             }
         }
 
-        // === Upload video với retry ===
         async function uploadVideo(isRetry = false) {
             if (!isRetry) {
                 uploadRetryCount = 0;
@@ -228,23 +625,35 @@
 
             const blob = new Blob(recordedChunks, { type: 'video/webm' });
             
-            // Kiểm tra kích thước
             if (blob.size > MAX_FILE_SIZE) {
-                document.getElementById('upload-status').textContent = 
-                    `Lỗi: File quá lớn (${(blob.size / 1024 / 1024).toFixed(2)}MB). Tối đa 50MB`;
-                document.getElementById('upload-status').style.color = 'red';
+                const statusEl = document.getElementById('upload-status');
+                statusEl.textContent = `Loi: File qua lon (${(blob.size / 1024 / 1024).toFixed(2)}MB). Toi da 50MB`;
+                statusEl.className = 'status-text status-error';
                 document.getElementById('btn-retry').style.display = 'inline-block';
                 return;
             }
+
+            const focusScore = aiAnalysis.totalFrames > 0 
+                ? Math.round(((aiAnalysis.totalFrames - aiAnalysis.lookingAwayFrames) / aiAnalysis.totalFrames) * 100) 
+                : 0;
+
+            const analysisJson = JSON.stringify({
+                focusScore: focusScore,
+                lookingAwayCount: aiAnalysis.lookingAwayFrames,
+                suspiciousCount: aiAnalysis.multipleFacesFrames + aiAnalysis.noFaceFrames,
+                warnings: [...new Set(aiAnalysis.warnings)]
+            });
 
             const formData = new FormData();
             formData.append('token', token);
             formData.append('folder', folder);
             formData.append('questionIndex', currentQuestionIndex + 1);
             formData.append('video', blob, `Q${currentQuestionIndex + 1}.webm`);
+            formData.append('analysisData', analysisJson);
 
-            document.getElementById('upload-status').textContent = 'Đang upload...';
-            document.getElementById('upload-status').style.color = 'blue';
+            const statusEl = document.getElementById('upload-status');
+            statusEl.textContent = 'Dang upload...';
+            statusEl.className = 'status-text status-info';
 
             try {
                 const response = await fetch(`${API_BASE}/api/upload-one`, {
@@ -254,16 +663,14 @@
 
                 if (!response.ok) {
                     const error = await response.json();
-                    throw new Error(error.detail || 'Upload thất bại');
+                    throw new Error(error.detail || 'Upload that bai');
                 }
 
                 const data = await response.json();
                 
-                document.getElementById('upload-status').textContent = 
-                    `✓ Upload thành công: ${data.savedAs} (${(blob.size / 1024 / 1024).toFixed(2)}MB)`;
-                document.getElementById('upload-status').style.color = 'green';
+                statusEl.textContent = `Upload thanh cong: ${data.savedAs} (${(blob.size / 1024 / 1024).toFixed(2)}MB) - Diem tap trung: ${focusScore}%`;
+                statusEl.className = 'status-text status-success';
                 
-                // Cho phép next hoặc finish
                 document.getElementById('btn-next').disabled = false;
                 uploadRetryCount = 0;
 
@@ -272,39 +679,34 @@
                 
                 if (uploadRetryCount < MAX_RETRIES) {
                     const delay = Math.min(1000 * Math.pow(2, uploadRetryCount), 10000);
-                    document.getElementById('upload-status').textContent = 
-                        `Upload thất bại. Thử lại sau ${delay/1000}s... (Lần ${uploadRetryCount}/${MAX_RETRIES})`;
-                    document.getElementById('upload-status').style.color = 'orange';
+                    statusEl.textContent = `Upload that bai. Thu lai sau ${delay/1000}s... (Lan ${uploadRetryCount}/${MAX_RETRIES})`;
+                    statusEl.className = 'status-text status-warning';
                     
                     setTimeout(() => uploadVideo(true), delay);
                 } else {
-                    document.getElementById('upload-status').textContent = 
-                        `Lỗi: ${error.message}. Vui lòng thử lại thủ công.`;
-                    document.getElementById('upload-status').style.color = 'red';
+                    statusEl.textContent = `Loi: ${error.message}. Vui long thu lai thu cong.`;
+                    statusEl.className = 'status-text status-error';
                     document.getElementById('btn-retry').style.display = 'inline-block';
                 }
             }
         }
 
-        // === Retry thủ công ===
         function retryUpload() {
             document.getElementById('btn-retry').style.display = 'none';
             uploadRetryCount = 0;
             uploadVideo(false);
         }
 
-        // === Câu tiếp theo ===
         function nextQuestion() {
             if (currentQuestionIndex < QUESTIONS.length - 1) {
                 loadQuestion(currentQuestionIndex + 1);
             } else {
-                alert('Đã hết câu hỏi. Vui lòng nhấn "Hoàn thành"');
+                alert('Da het cau hoi. Vui long nhan "Hoan thanh"');
             }
         }
 
-        // === Hoàn thành phỏng vấn ===
         async function finishInterview() {
-            if (!confirm('Bạn có chắc muốn hoàn thành phỏng vấn?')) {
+            if (!confirm('Ban co chac muon hoan thanh phong van?')) {
                 return;
             }
 
@@ -321,34 +723,29 @@
 
                 if (!response.ok) {
                     const error = await response.json();
-                    throw new Error(error.detail || 'Không thể kết thúc phiên');
+                    throw new Error(error.detail || 'Khong the ket thuc phien');
                 }
 
-                // Dừng stream
                 if (stream) {
                     stream.getTracks().forEach(track => track.stop());
                 }
 
-                // Chuyển sang màn hình hoàn thành
                 document.getElementById('step-interview').style.display = 'none';
                 document.getElementById('step-complete').style.display = 'block';
                 document.getElementById('final-folder-name').textContent = folder;
                 document.getElementById('total-questions').textContent = currentQuestionIndex + 1;
 
             } catch (error) {
-                alert('Lỗi khi hoàn thành: ' + error.message);
+                alert('Loi khi hoan thanh: ' + error.message);
             }
         }
 
-        // Cleanup khi đóng trang
         window.addEventListener('beforeunload', (e) => {
             if (stream && document.getElementById('step-interview').style.display === 'block') {
                 e.preventDefault();
-                e.returnValue = 'Bạn có chắc muốn rời đi? Dữ liệu có thể bị mất.';
+                e.returnValue = 'Ban co chac muon roi di? Du lieu co the bi mat.';
             }
         });
     </script>
 </body>
 </html>
-```
-
