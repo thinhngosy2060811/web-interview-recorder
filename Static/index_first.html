@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Interview Recorder</title>
+</head>
+<body>
+    <div id="app">
+        <!-- Bước 1: Nhập token và tên -->
+        <div id="step-token" style="display: block;">
+            <h1>Web Interview Recorder</h1>
+            <h2>Bước 1: Xác thực</h2>
+            <label>Token: <input type="text" id="token" value="demo123"></label><br><br>
+            <label>Họ tên: <input type="text" id="userName" placeholder="Nguyễn Văn A"></label><br><br>
+            <button onclick="verifyAndStart()">Bắt đầu phỏng vấn</button>
+            <p id="token-status"></p>
+        </div>
+
+        <!-- Bước 2: Xin quyền camera/microphone -->
+        <div id="step-permission" style="display: none;">
+            <h2>Bước 2: Cấp quyền</h2>
+            <p>Vui lòng cấp quyền truy cập camera và microphone</p>
+            <button onclick="requestPermissions()">Cấp quyền</button>
+            <p id="permission-status"></p>
+        </div>
+
+        <!-- Bước 3: Phỏng vấn -->
+        <div id="step-interview" style="display: none;">
+            <h2>Phỏng vấn</h2>
+            <p>Thư mục lưu: <strong id="folder-name"></strong></p>
+            
+            <!-- Video preview -->
+            <video id="preview" width="640" height="480" autoplay muted></video>
+            <br>
+            
+            <!-- Hiển thị câu hỏi hiện tại -->
+            <h3>Câu hỏi <span id="current-question-num">1</span>/5</h3>
+            <p id="current-question-text"></p>
+            
+            <!-- Trạng thái -->
+            <p>Trạng thái: <strong id="recording-status">Chưa ghi</strong></p>
+            <p id="upload-status"></p>
+            
+            <!-- Nút điều khiển -->
+            <button id="btn-start-record" onclick="startRecording()">Bắt đầu ghi</button>
+            <button id="btn-stop-record" onclick="stopRecording()" disabled>Dừng ghi</button>
+            <button id="btn-next" onclick="nextQuestion()" disabled>Câu tiếp theo</button>
+            <button id="btn-retry" onclick="retryUpload()" style="display: none;">Thử lại upload</button>
+            <button id="btn-finish" onclick="finishInterview()" style="display: none;">Hoàn thành</button>
+        </div>
+
+        <!-- Bước 4: Hoàn thành -->
+        <div id="step-complete" style="display: none;">
+            <h2>Hoàn thành!</h2>
+            <p>Cảm ơn bạn đã hoàn thành phỏng vấn.</p>
+            <p>Thư mục lưu: <strong id="final-folder-name"></strong></p>
+            <p>Số câu hỏi đã trả lời: <strong id="total-questions"></strong></p>
+        </div>
+    </div>
+
+    <script>
+        // Cấu hình
+        const API_BASE = '';  // Để trống nếu cùng domain
+        const QUESTIONS = [
+            "Hãy giới thiệu về bản thân bạn",
+            "Tại sao bạn muốn làm việc tại công ty chúng tôi?",
+            "Điểm mạnh và điểm yếu của bạn là gì?",
+            "Mô tả một dự án bạn tự hào nhất",
+            "Bạn có câu hỏi gì cho chúng tôi không?"
+        ];
+        const MAX_RETRIES = 3;
+        const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+
+        // Biến toàn cục
+        let token = '';
+        let userName = '';
+        let folder = '';
+        let currentQuestionIndex = 0;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let stream = null;
+        let uploadRetryCount = 0;
+
+        // === Bước 1: Verify token và start session ===
+        async function verifyAndStart() {
+            token = document.getElementById('token').value.trim();
+            userName = document.getElementById('userName').value.trim();
+            
+            if (!token || !userName) {
+                alert('Vui lòng nhập token và họ tên');
+                return;
+            }
+
+            const statusEl = document.getElementById('token-status');
+            statusEl.textContent = 'Đang xác thực...';
+
+            try {
+                // Verify token
+                const verifyRes = await fetch(`${API_BASE}/api/verify-token`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+
+                if (!verifyRes.ok) {
+                    const error = await verifyRes.json();
+                    throw new Error(error.detail || 'Token không hợp lệ');
+                }
+
+                // Start session
+                const startRes = await fetch(`${API_BASE}/api/session/start`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, userName })
+                });
+
+                if (!startRes.ok) {
+                    const error = await startRes.json();
+                    throw new Error(error.detail || 'Không thể tạo phiên làm việc');
+                }
+
+                const data = await startRes.json();
+                folder = data.folder;
+
+                statusEl.textContent = 'Xác thực thành công!';
+                
+                // Chuyển sang bước xin quyền
+                document.getElementById('step-token').style.display = 'none';
+                document.getElementById('step-permission').style.display = 'block';
+
+            } catch (error) {
+                statusEl.textContent = 'Lỗi: ' + error.message;
+                statusEl.style.color = 'red';
+            }
+        }
+
+        // === Bước 2: Request camera/microphone ===
+        async function requestPermissions() {
+            const statusEl = document.getElementById('permission-status');
+            statusEl.textContent = 'Đang xin quyền...';
+
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: true,
+                    audio: true
+                });
+
+                // Hiển thị preview
+                document.getElementById('preview').srcObject = stream;
+
+                statusEl.textContent = 'Đã cấp quyền!';
+
+                // Chuyển sang bước phỏng vấn
+                setTimeout(() => {
+                    document.getElementById('step-permission').style.display = 'none';
+                    document.getElementById('step-interview').style.display = 'block';
+                    document.getElementById('folder-name').textContent = folder;
+                    loadQuestion(0);
+                }, 1000);
+
+            } catch (error) {
+                statusEl.textContent = 'Lỗi: ' + error.message;
+                statusEl.style.color = 'red';
+                alert('Không thể truy cập camera/microphone. Vui lòng kiểm tra quyền trình duyệt.');
+            }
+        }
+
+        // === Load câu hỏi ===
+        function loadQuestion(index) {
+            currentQuestionIndex = index;
+            document.getElementById('current-question-num').textContent = index + 1;
+            document.getElementById('current-question-text').textContent = QUESTIONS[index];
+            document.getElementById('recording-status').textContent = 'Sẵn sàng';
+            document.getElementById('upload-status').textContent = '';
+            
+            // Reset buttons
+            document.getElementById('btn-start-record').disabled = false;
+            document.getElementById('btn-stop-record').disabled = true;
+            document.getElementById('btn-next').disabled = true;
+            document.getElementById('btn-retry').style.display = 'none';
+            
+            // Hiển thị nút Finish nếu đã hết câu hỏi
+            if (index >= QUESTIONS.length - 1) {
+                document.getElementById('btn-finish').style.display = 'inline-block';
+            }
+        }
+
+        // === Bắt đầu ghi ===
+        function startRecording() {
+            recordedChunks = [];
+            
+            mediaRecorder = new MediaRecorder(stream, {
+                mimeType: 'video/webm;codecs=vp8,opus'
+            });
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = () => {
+                uploadVideo();
+            };
+
+            mediaRecorder.start();
+            
+            document.getElementById('recording-status').textContent = 'Đang ghi...';
+            document.getElementById('btn-start-record').disabled = true;
+            document.getElementById('btn-stop-record').disabled = false;
+        }
+
+        // === Dừng ghi ===
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                document.getElementById('recording-status').textContent = 'Đã dừng';
+                document.getElementById('btn-stop-record').disabled = true;
+            }
+        }
+
+        // === Upload video với retry ===
+        async function uploadVideo(isRetry = false) {
+            if (!isRetry) {
+                uploadRetryCount = 0;
+            }
+
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            
+            // Kiểm tra kích thước
+            if (blob.size > MAX_FILE_SIZE) {
+                document.getElementById('upload-status').textContent = 
+                    `Lỗi: File quá lớn (${(blob.size / 1024 / 1024).toFixed(2)}MB). Tối đa 50MB`;
+                document.getElementById('upload-status').style.color = 'red';
+                document.getElementById('btn-retry').style.display = 'inline-block';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('token', token);
+            formData.append('folder', folder);
+            formData.append('questionIndex', currentQuestionIndex + 1);
+            formData.append('video', blob, `Q${currentQuestionIndex + 1}.webm`);
+
+            document.getElementById('upload-status').textContent = 'Đang upload...';
+            document.getElementById('upload-status').style.color = 'blue';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/upload-one`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Upload thất bại');
+                }
+
+                const data = await response.json();
+                
+                document.getElementById('upload-status').textContent = 
+                    `✓ Upload thành công: ${data.savedAs} (${(blob.size / 1024 / 1024).toFixed(2)}MB)`;
+                document.getElementById('upload-status').style.color = 'green';
+                
+                // Cho phép next hoặc finish
+                document.getElementById('btn-next').disabled = false;
+                uploadRetryCount = 0;
+
+            } catch (error) {
+                uploadRetryCount++;
+                
+                if (uploadRetryCount < MAX_RETRIES) {
+                    const delay = Math.min(1000 * Math.pow(2, uploadRetryCount), 10000);
+                    document.getElementById('upload-status').textContent = 
+                        `Upload thất bại. Thử lại sau ${delay/1000}s... (Lần ${uploadRetryCount}/${MAX_RETRIES})`;
+                    document.getElementById('upload-status').style.color = 'orange';
+                    
+                    setTimeout(() => uploadVideo(true), delay);
+                } else {
+                    document.getElementById('upload-status').textContent = 
+                        `Lỗi: ${error.message}. Vui lòng thử lại thủ công.`;
+                    document.getElementById('upload-status').style.color = 'red';
+                    document.getElementById('btn-retry').style.display = 'inline-block';
+                }
+            }
+        }
+
+        // === Retry thủ công ===
+        function retryUpload() {
+            document.getElementById('btn-retry').style.display = 'none';
+            uploadRetryCount = 0;
+            uploadVideo(false);
+        }
+
+        // === Câu tiếp theo ===
+        function nextQuestion() {
+            if (currentQuestionIndex < QUESTIONS.length - 1) {
+                loadQuestion(currentQuestionIndex + 1);
+            } else {
+                alert('Đã hết câu hỏi. Vui lòng nhấn "Hoàn thành"');
+            }
+        }
+
+        // === Hoàn thành phỏng vấn ===
+        async function finishInterview() {
+            if (!confirm('Bạn có chắc muốn hoàn thành phỏng vấn?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/session/finish`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token: token,
+                        folder: folder,
+                        questionsCount: currentQuestionIndex + 1
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Không thể kết thúc phiên');
+                }
+
+                // Dừng stream
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+
+                // Chuyển sang màn hình hoàn thành
+                document.getElementById('step-interview').style.display = 'none';
+                document.getElementById('step-complete').style.display = 'block';
+                document.getElementById('final-folder-name').textContent = folder;
+                document.getElementById('total-questions').textContent = currentQuestionIndex + 1;
+
+            } catch (error) {
+                alert('Lỗi khi hoàn thành: ' + error.message);
+            }
+        }
+
+        // Cleanup khi đóng trang
+        window.addEventListener('beforeunload', (e) => {
+            if (stream && document.getElementById('step-interview').style.display === 'block') {
+                e.preventDefault();
+                e.returnValue = 'Bạn có chắc muốn rời đi? Dữ liệu có thể bị mất.';
+            }
+        });
+    </script>
+</body>
+</html>
+```
+
