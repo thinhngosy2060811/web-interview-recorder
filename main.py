@@ -12,10 +12,7 @@ import re
 import logging
 import uvicorn
 
-# --- Logging Configuration ---
-# MỤC ĐÍCH: Ghi log để debug và theo dõi hoạt động hệ thống
-# - Lưu vào file app.log và hiển thị trên console
-# - Format có timestamp, level (INFO/ERROR), và message
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -26,12 +23,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# --- Configuration ---
+
 app = FastAPI(title="Web Interview Recorder", version="1.0")
 
-# MỤC ĐÍCH: Cho phép frontend gọi API từ domain khác (CORS)
-# - allow_origins=["*"]: Cho phép mọi domain (dev only, prod nên chỉ định cụ thể)
-# - Cần thiết để HTML có thể gọi API
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -44,21 +39,16 @@ BASE_DIR = Path(__file__).parent
 UPLOAD_DIR = BASE_DIR / "uploads"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
-# MỤC ĐÍCH: Serve các file tĩnh (HTML, CSS, JS)
-# - /static route sẽ map đến thư mục static/
-# - Không serve uploads để bảo mật
+
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 
-# --- Configuration ---
-# MỤC ĐÍCH: Định nghĩa các token hợp lệ (trong thực tế nên dùng database)
+
 VALID_TOKENS = {"demo123", "test456", "student2024"}
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 ALLOWED_MIME_TYPES = {"video/webm", "video/mp4"}
 BANGKOK_TZ = pytz.timezone('Asia/Bangkok')
 
-# MỤC ĐÍCH: Theo dõi các session đang active trong memory
-# - Key: tên folder, Value: thông tin session (token, thời gian, uploads)
-# - Để kiểm tra session còn active không và ngăn upload sau khi finish
+
 active_sessions = {}
 
 # MỤC ĐÍCH: Lock để tránh race condition khi nhiều request cập nhật metadata cùng lúc
