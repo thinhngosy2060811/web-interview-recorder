@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -97,13 +97,26 @@
         
         .video-container {
             position: relative;
-            display: inline-block;
-            border-radius: 12px;
+            width: 640px;
+            height: 480px;
+            margin: 20px auto;
+            background: #000;
+            border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            margin: 20px 0;
         }
-        
+        .timer-overlay{
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 1.5em;
+            font-weight: bold;
+            z-index: 10;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
         #preview {
             display: block;
             width: 640px;
@@ -189,13 +202,67 @@
             gap: 10px;
             margin: 20px 0;
         }
+        .ai-card {
+            margin-top: 15px;
+            padding: 20px;
+            border-radius: 12px;
+            background: #ffffff;
+            border: 1px solid #ddd;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: none;
+        }
+        .decision-text {
+            font-size: 28px;
+            font-weight: 900;
+            text-align: center;
+            margin: 10px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .score-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            border-bottom: 1px dashed #eee;
+            padding-bottom: 8px;
+        }
+        .timer-display {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin: 10px 0;
+            display: inline-block;
+            padding: 5px 15px;
+            background: #f0f0f0;
+            border-radius: 20px;
+        }
+        
+        #review-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 2px solid #667eea;
+        }
+        
+        #review-player {
+            display: block;
+            margin: 10px auto;
+            border-radius: 8px;
+            max-width: 100%;
+        }
         
         @media (max-width: 768px) {
             #app {
                 padding: 20px;
             }
             
-            #preview, #output_canvas {
+            .video-container {
+                width: 100%;
+                height: auto;
+            }
+            
+            #preview, #output_canvas, #review-player {
                 width: 100%;
                 height: auto;
             }
@@ -233,9 +300,21 @@
             <div class="video-container">
                 <video id="preview" width="640" height="480" autoplay muted></video>
                 <canvas id="output_canvas" width="640" height="480"></canvas>
+                <div id="timer-display" class="timer-overlay">03:00</div>
             </div>
             
             <div id="ai-warning"></div>
+            
+            <!-- PHẦN XEM LẠI VIDEO -->
+            <div id="review-section" style="display: none;">
+                <h3 style="color: #667eea;">📹 Xem lại video của bạn</h3>
+                <video id="review-player" width="640" height="480" controls></video>
+                
+                <div style="text-align: center; margin-top: 15px;">
+                    <button onclick="confirmVideo()" style="background: #28a745;">✅ Đồng ý - Upload video này</button>
+                    <button onclick="cancelReview()" style="background: #dc3545;">❌ Hủy - Thu lại(1 lần duy nhất)</button>
+                </div>
+            </div>
             
             <div class="question-box">
                 <h3>Cau hoi <span id="current-question-num">1</span>/5</h3>
@@ -246,11 +325,10 @@
             <p id="upload-status" class="status-text"></p>
             
             <div class="button-group">
-                <button id="btn-start-record" onclick="startRecording()">Bat dau ghi</button>
-                <button id="btn-stop-record" onclick="stopRecording()" disabled>Dung ghi</button>
-                <button id="btn-next" onclick="nextQuestion()" disabled>Cau tiep theo</button>
-                <button id="btn-retry" onclick="retryUpload()" style="display: none;">Thu lai upload</button>
-                <button id="btn-finish" onclick="finishInterview()" style="display: none;">Hoan thanh</button>
+                <button id="btn-start-record" onclick="startRecording()">Bắt đầu ghi</button>
+                <button id="btn-stop-record" onclick="stopRecording()" disabled>Dừng ghi</button>
+                <button id="btn-next" onclick="nextQuestion()" disabled>Câu tiếp theo</button>
+                <button id="btn-finish" onclick="finishInterview()" style="display: none;">Hoàn thành</button>
             </div>
         </div>
 
@@ -265,7 +343,7 @@
         </div>
     </div>
 
-    <script>
+    <script> 
         let faceMesh;
         let camera;
         let aiAnalysis = {
@@ -275,10 +353,19 @@
             noFaceFrames: 0,
             warnings: []
         };
+        
+        const TIME_LIMIT_SEC = 180; // 3 phút
+        let QUESTIONS = []; // Sẽ lấy từ Server
+        let timerInterval;
         let isAiRunning = false;
-
         let violationStartTime = null;
-        const VIOLATION_THRESHOLD_MS = 10000;
+        const VIOLATION_THRESHOLD_MS = 5000;
+
+        // Biến toàn cục mới cho logic upload
+        let pendingVideoBlob = null; // Lưu video tạm thời
+
+        let retryCountForCurrentQuestion = 0; // Đếm số lần retry cho câu hiện tại
+        const MAX_RETRIES_PER_QUESTION = 1;   // Giới hạn 1 lần retry/câu
 
         async function initAI() {
             const videoElement = document.getElementById('preview');
@@ -310,7 +397,7 @@
 
             function onResults(results) {
                 if (!isAiRunning) return;
-
+                
                 aiAnalysis.totalFrames++;
                 let warningMsg = "";
                 let isViolation = false;
@@ -397,27 +484,24 @@
                         aiAnalysis.warnings.push(currentViolationType);
                     }
                 }
-
-                if (isViolation && currentViolationType !== "PHAT HIEN NGUOI LA!" && currentViolationType !== "KHONG TIM THAY KHUON MAT") {
-                    aiAnalysis.lookingAwayFrames++;
-                    
+                if (isViolation) {
                     if (violationStartTime === null) {
                         violationStartTime = Date.now();
                     }
-                    
                     const violationDuration = Date.now() - violationStartTime;
-                    
+
                     if (violationDuration >= VIOLATION_THRESHOLD_MS) {
                         warningMsg = currentViolationType;
-                        
                         if (!aiAnalysis.warnings.includes(currentViolationType)) {
                             aiAnalysis.warnings.push(currentViolationType);
                         }
                     }
-                } else if (!isViolation) {
+
+                    aiAnalysis.lookingAwayFrames++;
+
+                } else {
                     violationStartTime = null;
                 }
-            
                 const warningEl = document.getElementById('ai-warning');
                 if (warningMsg) {
                     warningEl.textContent = warningMsg;
@@ -453,13 +537,6 @@
         }
 
         const API_BASE = '';
-        const QUESTIONS = [
-            "Hay gioi thieu ve ban than ban",
-            "Tai sao ban muon lam viec tai cong ty chung toi?",
-            "Diem manh va diem yeu cua ban la gi?",
-            "Mo ta mot du an ban tu hao nhat",
-            "Ban co cau hoi gi cho chung toi khong?"
-        ];
         const MAX_RETRIES = 3;
         const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
@@ -510,6 +587,9 @@
 
                 const data = await startRes.json();
                 folder = data.folder;
+                
+                // Lấy danh sách câu hỏi từ server (format mới: array of objects)
+                QUESTIONS = data.questions;
 
                 statusEl.textContent = 'Xac thuc thanh cong!';
                 statusEl.className = 'status-text status-success';
@@ -559,15 +639,24 @@
         function loadQuestion(index) {
             currentQuestionIndex = index;
             document.getElementById('current-question-num').textContent = index + 1;
+            // SỬA: Vì QUESTIONS giờ là array of objects
             document.getElementById('current-question-text').textContent = QUESTIONS[index];
             document.getElementById('recording-status').textContent = 'San sang';
             document.getElementById('upload-status').textContent = '';
-            document.getElementById('upload-status').className = 'status-text';
+
+            retryCountForCurrentQuestion = 0;
             
+            // Ẩn review section
+            document.getElementById('review-section').style.display = 'none';
+            
+            // Reset đồng hồ
+            document.getElementById('timer-display').textContent = "03:00";
+            document.getElementById('timer-display').style.color = "#333";
+            
+            // Reset nút bấm
             document.getElementById('btn-start-record').disabled = false;
             document.getElementById('btn-stop-record').disabled = true;
             document.getElementById('btn-next').disabled = true;
-            document.getElementById('btn-retry').style.display = 'none';
             
             if (index >= QUESTIONS.length - 1) {
                 document.getElementById('btn-finish').style.display = 'inline-block';
@@ -577,6 +666,7 @@
         function startRecording() {
             recordedChunks = [];
             violationStartTime = null;
+            pendingVideoBlob = null; // Reset pending video
             
             mediaRecorder = new MediaRecorder(stream, {
                 mimeType: 'video/webm;codecs=vp8,opus'
@@ -588,8 +678,9 @@
                 }
             };
 
+            // THAY ĐỔI CHÍNH: Khi stop -> hiện preview, KHÔNG upload ngay
             mediaRecorder.onstop = () => {
-                uploadVideo();
+                showVideoReview();
             };
 
             aiAnalysis = {
@@ -602,6 +693,27 @@
             isAiRunning = true;
             
             mediaRecorder.start();
+
+            // Logic đồng hồ đếm ngược
+            let timeLeft = TIME_LIMIT_SEC;
+            const timerEl = document.getElementById('timer-display');
+            
+            if (timerInterval) clearInterval(timerInterval);
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                
+                const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+                const s = (timeLeft % 60).toString().padStart(2, '0');
+                timerEl.textContent = `${m}:${s}`;
+                
+                if (timeLeft < 30) timerEl.style.color = "red";
+                else timerEl.style.color = "#333";
+
+                if (timeLeft <= 0) {
+                    stopRecording();
+                }
+            }, 1000);
             
             document.getElementById('recording-status').textContent = 'Dang ghi...';
             document.getElementById('btn-start-record').disabled = true;
@@ -613,23 +725,152 @@
                 mediaRecorder.stop();
                 isAiRunning = false;
                 violationStartTime = null;
-                document.getElementById('recording-status').textContent = 'Da dung';
+
+                // Dừng đồng hồ
+                if (timerInterval) clearInterval(timerInterval);
+
+                document.getElementById('recording-status').textContent = 'Đã dừng - Đang xử lý...';
                 document.getElementById('btn-stop-record').disabled = true;
             }
         }
 
+        // HÀM MỚI: Hiển thị video review
+        function showVideoReview() {
+            pendingVideoBlob = new Blob(recordedChunks, { type: 'video/webm' });
+            
+            // Kiểm tra kích thước
+            if (pendingVideoBlob.size > MAX_FILE_SIZE) {
+                alert(`❌ Video quá lớn (${(pendingVideoBlob.size / 1024 / 1024).toFixed(2)}MB). Tối đa 50MB. Vui lòng thu lại ngắn hơn.`);
+                resetForRetry();
+                return;
+            }
+            
+            // Tạo URL để preview
+            const videoUrl = URL.createObjectURL(pendingVideoBlob);
+            const reviewPlayer = document.getElementById('review-player');
+            reviewPlayer.src = videoUrl;
+            
+            // Hiển thị phần review
+            document.getElementById('review-section').style.display = 'block';
+            document.getElementById('recording-status').textContent = '⏸️ Xem lại video và quyết định';
+        }
+
+        // HÀM MỚI: Xác nhận upload
+        function confirmVideo() {
+            if (!pendingVideoBlob) {
+                alert('Không tìm thấy video!');
+                return;
+            }
+            
+            // Ẩn review section
+            document.getElementById('review-section').style.display = 'none';
+            
+            // Bật nút Next để upload
+            document.getElementById('btn-next').disabled = false;
+            document.getElementById('recording-status').textContent = '✅ Video đã sẵn sàng - Ấn "Câu tiếp theo" để upload';
+        }
+
+        // HÀM MỚI: Hủy và cho phép thu lại
+        function cancelReview() {
+            if (retryCountForCurrentQuestion >= MAX_RETRIES_PER_QUESTION) {
+            alert('❌ Bạn đã hết lượt thu lại cho câu này!\n\nVui lòng chọn "✅ Đồng ý" để tiếp tục.');
+            return; // CHẶN không cho retry thêm
+            }
+    
+            // Confirm trước khi retry
+            if (!confirm('⚠️ Bạn chỉ được thu lại 1 LẦN DUY NHẤT cho câu này.\n\nChắc chắn muốn hủy video này và thu lại?')) {
+                return; // User không muốn retry
+            }
+            
+            // ✅ Tăng biến đếm
+            retryCountForCurrentQuestion++;
+
+            // Xóa video preview
+            const reviewPlayer = document.getElementById('review-player');
+            URL.revokeObjectURL(reviewPlayer.src);
+            reviewPlayer.src = '';
+            
+            // Ẩn review section
+            document.getElementById('review-section').style.display = 'none';
+            
+            // Reset để thu lại
+            resetForRetry();
+        }
+
+        // HÀM MỚI: Reset để thu lại
+        function resetForRetry() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            mediaRecorder = null; 
+            
+            pendingVideoBlob = null;
+            recordedChunks = [];
+            
+         
+            aiAnalysis = {
+                totalFrames: 0,
+                lookingAwayFrames: 0,
+                multipleFacesFrames: 0,
+                noFaceFrames: 0,
+                warnings: []
+            };
+            isAiRunning = false;
+            violationStartTime = null;
+            
+            document.getElementById('recording-status').textContent = '🔄 Sẵn sàng thu lại';
+            document.getElementById('timer-display').textContent = "03:00";
+            document.getElementById('timer-display').style.color = "#333";
+            document.getElementById('ai-warning').textContent = ""; // ✅ THÊM: Xóa cảnh báo AI
+            
+            document.getElementById('btn-start-record').disabled = false;
+            document.getElementById('btn-stop-record').disabled = true;
+            document.getElementById('btn-next').disabled = true;
+        }
+
+        // SỬA HÀM nextQuestion() - GỌI UPLOAD Ở ĐÂY
+        async function nextQuestion() {
+            // THAY ĐỔI CHÍNH: Upload video trước khi chuyển câu
+            if (pendingVideoBlob) {
+                // Vô hiệu hóa nút để tránh spam
+                document.getElementById('btn-next').disabled = true;
+                document.getElementById('recording-status').textContent = '📤 Đang upload...';
+                
+                // Upload video
+                await uploadVideo();
+                
+                // Sau khi upload xong mới chuyển câu
+                if (uploadRetryCount === 0) { // Upload thành công
+                    pendingVideoBlob = null;
+                    
+                    if (currentQuestionIndex < QUESTIONS.length - 1) {
+                        loadQuestion(currentQuestionIndex + 1);
+                    } else {
+                        alert('Đã hết câu hỏi. Vui lòng nhấn "Hoàn thành"');
+                    }
+                }
+            } else {
+                alert('Chưa có video để upload!');
+            }
+        }
+
+        // SỬA HÀM uploadVideo() - SỬ DỤNG pendingVideoBlob
         async function uploadVideo(isRetry = false) {
             if (!isRetry) {
                 uploadRetryCount = 0;
             }
 
-            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            if (!pendingVideoBlob) {
+                alert('Không tìm thấy video để upload!');
+                return;
+            }
+
+            const blob = pendingVideoBlob;
             
             if (blob.size > MAX_FILE_SIZE) {
                 const statusEl = document.getElementById('upload-status');
-                statusEl.textContent = `Loi: File qua lon (${(blob.size / 1024 / 1024).toFixed(2)}MB). Toi da 50MB`;
+                statusEl.textContent = `Lỗi: File quá lớn (${(blob.size / 1024 / 1024).toFixed(2)}MB). Tối đa 50MB`;
                 statusEl.className = 'status-text status-error';
-                document.getElementById('btn-retry').style.display = 'inline-block';
                 return;
             }
 
@@ -639,8 +880,6 @@
 
             const analysisJson = JSON.stringify({
                 focusScore: focusScore,
-                lookingAwayCount: aiAnalysis.lookingAwayFrames,
-                suspiciousCount: aiAnalysis.multipleFacesFrames + aiAnalysis.noFaceFrames,
                 warnings: [...new Set(aiAnalysis.warnings)]
             });
 
@@ -652,7 +891,7 @@
             formData.append('analysisData', analysisJson);
 
             const statusEl = document.getElementById('upload-status');
-            statusEl.textContent = 'Dang upload...';
+            statusEl.textContent = '📤 Đang upload...';
             statusEl.className = 'status-text status-info';
 
             try {
@@ -663,15 +902,14 @@
 
                 if (!response.ok) {
                     const error = await response.json();
-                    throw new Error(error.detail || 'Upload that bai');
+                    throw new Error(error.detail || 'Upload thất bại');
                 }
 
                 const data = await response.json();
                 
-                statusEl.textContent = `Upload thanh cong: ${data.savedAs} (${(blob.size / 1024 / 1024).toFixed(2)}MB) - Diem tap trung: ${focusScore}%`;
+                statusEl.textContent = `✅ Upload thành công: ${data.savedAs} (${(blob.size / 1024 / 1024).toFixed(2)}MB) - Điểm tập trung: ${focusScore}%`;
                 statusEl.className = 'status-text status-success';
-                
-                document.getElementById('btn-next').disabled = false;
+               
                 uploadRetryCount = 0;
 
             } catch (error) {
@@ -679,29 +917,15 @@
                 
                 if (uploadRetryCount < MAX_RETRIES) {
                     const delay = Math.min(1000 * Math.pow(2, uploadRetryCount), 10000);
-                    statusEl.textContent = `Upload that bai. Thu lai sau ${delay/1000}s... (Lan ${uploadRetryCount}/${MAX_RETRIES})`;
+                    statusEl.textContent = `⚠️ Upload thất bại. Thử lại sau ${delay/1000}s... (Lần ${uploadRetryCount}/${MAX_RETRIES})`;
                     statusEl.className = 'status-text status-warning';
                     
                     setTimeout(() => uploadVideo(true), delay);
                 } else {
-                    statusEl.textContent = `Loi: ${error.message}. Vui long thu lai thu cong.`;
+                    statusEl.textContent = `❌ Lỗi: ${error.message}. Vui lòng thử lại.`;
                     statusEl.className = 'status-text status-error';
-                    document.getElementById('btn-retry').style.display = 'inline-block';
+                    document.getElementById('btn-next').disabled = false; // Cho phép retry
                 }
-            }
-        }
-
-        function retryUpload() {
-            document.getElementById('btn-retry').style.display = 'none';
-            uploadRetryCount = 0;
-            uploadVideo(false);
-        }
-
-        function nextQuestion() {
-            if (currentQuestionIndex < QUESTIONS.length - 1) {
-                loadQuestion(currentQuestionIndex + 1);
-            } else {
-                alert('Da het cau hoi. Vui long nhan "Hoan thanh"');
             }
         }
 
