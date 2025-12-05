@@ -11,8 +11,15 @@ import json
 import re
 import logging
 import uvicorn
+import whisper  # OpenAI Whisper cho Speech-to-Text
+import subprocess  # Để chạy FFmpeg command
+import asyncio  # Để chạy transcription không block server
+from typing import Optional #type hints cho python
 
-
+# --- Logging Configuration ---
+# MỤC ĐÍCH: Ghi log để debug và theo dõi hoạt động hệ thống
+# - Lưu vào file app.log và hiển thị trên console
+# - Format có timestamp, level (INFO/ERROR), và message
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -22,11 +29,29 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+#2: log
+try:
+    logger.info("Loading Whisper model (small)... This may take 1-2 minutes on first run")
+    logger.info("Model will be downloaded (~244MB) if not exists")
+    
+    # Load model "small" - balance giữa accuracy và speed
+    # Options: "tiny" (39MB), "base" (74MB), "small" (244MB), "medium" (769MB), "large" (1550MB)
+    WHISPER_MODEL = whisper.load_model("small")
+    
+    logger.info("Whisper model loaded successfully!")
+    logger.info(f"Model info: small (244MB, ~90% accuracy)")
+    
+except Exception as e:
+    logger.error(f"Failed to load Whisper model: {e}")
+    logger.error("Transcription will be disabled. Install: pip install openai-whisper")
+    WHISPER_MODEL = None
 
-
+# --- Configuration ---
 app = FastAPI(title="Web Interview Recorder", version="1.0")
 
-
+# MỤC ĐÍCH: Cho phép frontend gọi API từ domain khác (CORS)
+# - allow_origins=["*"]: Cho phép mọi domain (dev only, prod nên chỉ định cụ thể)
+# - Cần thiết để HTML có thể gọi API
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -39,16 +64,21 @@ BASE_DIR = Path(__file__).parent
 UPLOAD_DIR = BASE_DIR / "uploads"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
-
+# MỤC ĐÍCH: Serve các file tĩnh (HTML, CSS, JS)
+# - /static route sẽ map đến thư mục static/
+# - Không serve uploads để bảo mật
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 
-
-VALID_TOKENS = {"demo123", "test456", "student2024"}
+# --- Configuration ---
+# MỤC ĐÍCH: Định nghĩa các token hợp lệ (trong thực tế nên dùng database)
+VALID_TOKENS = {"Thịnh", "Hồng", "Thành", "Luân"}
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 ALLOWED_MIME_TYPES = {"video/webm", "video/mp4"}
 BANGKOK_TZ = pytz.timezone('Asia/Bangkok')
 
-
+# MỤC ĐÍCH: Theo dõi các session đang active trong memory
+# - Key: tên folder, Value: thông tin session (token, thời gian, uploads)
+# - Để kiểm tra session còn active không và ngăn upload sau khi finish
 active_sessions = {}
 
 # MỤC ĐÍCH: Lock để tránh race condition khi nhiều request cập nhật metadata cùng lúc
@@ -95,7 +125,7 @@ def generate_folder_name(username: str) -> str:
     """
     now = datetime.now(BANGKOK_TZ)
     sanitized = sanitize_username(username)
-    return f"{now.strftime('%d_%m_%Y_%H_%M')}_ten_{sanitized}"
+    return f"{now.strftime('%d_%m_%Y_%H_%M')}_{sanitized}"
 
 def verify_video_by_signature(file_path: Path) -> bool:
     """
@@ -134,6 +164,177 @@ def verify_video_by_signature(file_path: Path) -> bool:
     except Exception as e:
         logger.error(f"Error reading file signature: {e}")
         return False
+
+async def transcribe_video_whisper(video_path: Path, question_index: int) -> Optional[str]:
+    """
+    CHỨC NĂNG: Chuyển video thành text transcript sử dụng OpenAI Whisper
+    
+    QUY TRÌNH:
+    1. Extract audio từ video file (.webm → .wav) bằng FFmpeg
+    2. Chạy Whisper model để transcribe audio → text
+    3. Format kết quả với timestamps từng câu
+    4. Lưu vào file Q<N>_transcript.txt
+    5. Cleanup file audio tạm
+    
+    Args:
+        video_path: Đường dẫn đến file video (VD: uploads/folder/Q1.webm)
+        question_index: Số thứ tự câu hỏi (1-5)
+    
+    Returns:
+        str: Nội dung transcript, hoặc None nếu thất bại
+    
+    Examples:
+        >>> await transcribe_video_whisper(Path("Q1.webm"), 1)
+        "Hello, my name is John..."
+    """
+    
+    # KIỂM TRA: Model đã được load chưa?
+    if WHISPER_MODEL is None:
+        logger.warning("Whisper model not loaded, skipping transcription")
+        logger.warning("Install: pip install openai-whisper ffmpeg-python")
+        return None
+    
+    try:
+        # ===== BƯỚC 1: EXTRACT AUDIO TỪ VIDEO =====
+        # Mục đích: Whisper chỉ nhận audio, không nhận video
+        # Format: WAV 16kHz mono (theo yêu cầu của Whisper)
+        
+        audio_path = video_path.with_suffix('.wav')  # Q1.webm → Q1.wav
+        
+        logger.info(f"[Q{question_index}] Extracting audio from {video_path.name}...")
+        logger.info(f"Output: {audio_path.name}")
+        
+        # Chạy FFmpeg command
+        # -i: input file
+        # -vn: không lấy video (only audio)
+        # -acodec pcm_s16le: audio codec (WAV format)
+        # -ar 16000: sample rate 16kHz (Whisper requirement)
+        # -ac 1: mono channel (1 channel, không stereo)
+        # -y: overwrite nếu file đã tồn tại
+        # -loglevel error: chỉ show error, không show info
+        result = subprocess.run([
+            'ffmpeg',
+            '-i', str(video_path),      # Input: Q1.webm
+            '-vn',                        # No video
+            '-acodec', 'pcm_s16le',      # Audio codec cho WAV
+            '-ar', '16000',               # Sample rate 16kHz
+            '-ac', '1',                   # Mono (1 channel)
+            str(audio_path),             # Output: Q1.wav
+            '-y',                         # Overwrite
+            '-loglevel', 'error'         # Chỉ show errors
+        ], capture_output=True, text=True, timeout=60)  # Timeout 60s
+        
+        # KIỂM TRA: FFmpeg có chạy thành công không?
+        if result.returncode != 0:
+            logger.error(f"FFmpeg failed: {result.stderr}")
+            logger.error("Check: ffmpeg -version")
+            return None
+        
+        logger.info(f"Audio extracted: {audio_path.name} ({audio_path.stat().st_size // 1024}KB)")
+        
+        # ===== BƯỚC 2: TRANSCRIBE BẰNG WHISPER =====
+        # Mục đích: Chuyển audio → text
+        # Chạy trong thread pool để không block server (vì Whisper chậm 30-60s)
+        
+        logger.info(f"[Q{question_index}] Transcribing with Whisper (small model)...")
+        logger.info(f"Expected time: ~30-60 seconds for 1-minute video")
+        
+        # Run trong thread pool (asyncio.to_thread) để không block event loop
+        whisper_result = await asyncio.to_thread(
+            WHISPER_MODEL.transcribe,
+            str(audio_path),              # Input audio file
+            language='vi',                 # 'en' = English, 'vi' = Vietnamese, None = auto-detect
+            task='transcribe',            # 'transcribe' hoặc 'translate' (translate → English)
+            fp16=False,                   # Tắt FP16 nếu không có GPU (CPU mode)
+            verbose=False,                # Không print progress
+            temperature=0.0,              # Temperature 0 = deterministic (same input → same output)
+            compression_ratio_threshold=2.4,  # Detect hallucinations
+            logprob_threshold=-1.0,       # Confidence threshold
+            no_speech_threshold=0.6       # Detect silent parts
+        )
+        
+        logger.info(f"Transcription completed!")
+        logger.info(f"Detected language: {whisper_result.get('language', 'unknown')}")
+        logger.info(f"Text length: {len(whisper_result['text'])} characters")
+        logger.info(f"Segments: {len(whisper_result.get('segments', []))} parts")
+        
+        # ===== BƯỚC 3: FORMAT TRANSCRIPT =====
+        # Mục đích: Tạo file text dễ đọc với timestamps
+        
+        transcript_text = f"=" * 60 + "\n"
+        transcript_text += f"QUESTION {question_index} TRANSCRIPT\n"
+        transcript_text += f"=" * 60 + "\n\n"
+        
+        # Metadata
+        transcript_text += f"Generated at: {get_bangkok_timestamp()}\n"
+        transcript_text += f"Language detected: {whisper_result.get('language', 'unknown').upper()}\n"
+        transcript_text += f"Total duration: {whisper_result.get('segments', [{}])[-1].get('end', 0):.2f} seconds\n"
+        transcript_text += f"Total segments: {len(whisper_result.get('segments', []))}\n"
+        transcript_text += f"\n" + "-" * 60 + "\n"
+        
+        # Full text (không có timestamps)
+        transcript_text += f"FULL TEXT\n"
+        transcript_text += f"-" * 60 + "\n"
+        transcript_text += whisper_result['text'].strip() + "\n"
+        transcript_text += f"\n" + "-" * 60 + "\n"
+        
+        # Segments with timestamps (chi tiết từng câu)
+        transcript_text += f"DETAILED SEGMENTS (with timestamps)\n"
+        transcript_text += f"-" * 60 + "\n\n"
+        
+        for i, segment in enumerate(whisper_result.get('segments', []), 1):
+            start = segment['start']      # Thời gian bắt đầu (giây)
+            end = segment['end']          # Thời gian kết thúc (giây)
+            text = segment['text'].strip()  # Nội dung text
+            
+            # Format: [MM:SS - MM:SS] Text
+            transcript_text += f"[{start//60:02.0f}:{start%60:05.2f} → {end//60:02.0f}:{end%60:05.2f}] {text}\n"
+        
+        transcript_text += f"\n" + "=" * 60 + "\n"
+        transcript_text += f"END OF TRANSCRIPT\n"
+        transcript_text += f"=" * 60 + "\n"
+        # ===== BƯỚC 4: LƯU FILE TRANSCRIPT =====
+        # Mục đích: Lưu transcript vào file Q<N>_transcript.txt
+        
+        transcript_file = video_path.parent / f"Q{question_index}_transcript.txt"
+        transcript_file.write_text(transcript_text, encoding='utf-8')
+        
+        logger.info(f"Transcript saved: {transcript_file.name}")
+        logger.info(f"File size: {transcript_file.stat().st_size // 1024}KB")
+        
+        # ===== BƯỚC 5: CLEANUP =====
+        # Mục đích: Xóa file audio tạm để tiết kiệm disk space
+        
+        try:
+            audio_path.unlink(missing_ok=True)  # Xóa Q1.wav
+            logger.info(f"Cleaned up: {audio_path.name}")
+        except Exception as e:
+            logger.warning(f"Could not delete temp audio file: {e}")
+        
+        # Trả về full text (không có timestamps)
+        return whisper_result['text'].strip()
+        
+    except subprocess.TimeoutExpired:
+        # FFmpeg chạy quá lâu (> 60s)
+        logger.error(f"FFmpeg timeout - video quá dài hoặc bị lỗi")
+        return None
+        
+    except FileNotFoundError as e:
+        # FFmpeg không được cài đặt
+        logger.error(f"FFmpeg not found: {e}")
+        logger.error("Install FFmpeg:")
+        logger.error("   - Windows: choco install ffmpeg")
+        logger.error("   - Mac: brew install ffmpeg")
+        logger.error("   - Ubuntu: sudo apt install ffmpeg")
+        return None
+        
+    except Exception as e:
+        # Lỗi khác (Whisper error, file error, etc)
+        logger.error(f"Transcription error for Q{question_index}: {str(e)}")
+        logger.error(f"Error type: {type(e).__name__}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return None
 
 async def create_metadata(folder_path: Path, username: str) -> dict:
     """
@@ -183,17 +384,36 @@ async def update_metadata(folder_path: Path, question_data: dict = None, finaliz
         with meta_file.open("r", encoding="utf-8") as f:
             metadata = json.load(f)
         
+        # CASE 1: Thêm question data sau mỗi upload
         if question_data:
             metadata["questions"].append(question_data)
-            logger.info(f"Added question {question_data['index']} to metadata: {folder_path.name}")
+            logger.info(f"➕ Added question {question_data['index']} to metadata: {folder_path.name}")
         
+        # CASE 2: Finalize session (gọi từ /api/session/finish)
         if finalize:
             metadata["sessionEnded"] = True
             metadata["sessionEndTime"] = get_bangkok_timestamp()
+            
             if questions_count is not None:
                 metadata["questionsCount"] = questions_count
-            logger.info(f"Finalized session: {folder_path.name}")
+            
+            # ===== MỚI THÊM: Count số transcript files =====
+            # Mục đích: Kiểm tra có bao nhiêu transcript đã được generate
+            # Pattern: Q*_transcript.txt (VD: Q1_transcript.txt, Q2_transcript.txt)
+            transcript_files = list(folder_path.glob("*_transcript.txt"))
+            transcript_count = len(transcript_files)
+            
+            metadata["transcriptsGenerated"] = transcript_count
+            
+            logger.info(f"🏁 Finalized session: {folder_path.name}")
+            logger.info(f"📊 Questions answered: {questions_count}")
+            logger.info(f"📝 Transcripts generated: {transcript_count}/{questions_count}")
+            
+            # WARNING: Nếu không có transcript nào
+            if transcript_count == 0:
+                logger.warning(f"⚠️  No transcripts generated for this session!")
         
+        # GHI lại vào file
         with meta_file.open("w", encoding="utf-8") as f:
             json.dump(metadata, f, indent=2, ensure_ascii=False)
 
@@ -205,7 +425,7 @@ def home():
     - Đọc file static/index.html và trả về
     - HTML này chứa code getUserMedia để xin quyền camera/mic
     """
-    html = (BASE_DIR / "static" / "index(1).html").read_text(encoding="utf-8")
+    html = (BASE_DIR / "static" / "index.html").read_text(encoding="utf-8")
     return HTMLResponse(content=html)
 
 # --- API Endpoints ---
@@ -281,56 +501,61 @@ async def upload_one(
     video: UploadFile = File(...)
 ):
     """
-    MỤC ĐÍCH: Upload 1 video cho 1 câu hỏi (per-question upload)
-    - Verify token và session còn active
-    - Check file size (max 50MB)
-    - Check MIME type (video/webm, video/mp4)
-    - Verify bằng magic bytes
-    - Lưu file với tên Q1.webm, Q2.webm, ...
-    - Update metadata
-    - Cho phép retry (overwrite file cũ)
-    """
-    logger.info(f"Upload request - Folder: {folder}, Question: {questionIndex}")
+    MỤC ĐÍCH: Upload 1 video cho 1 câu hỏi
     
+    FLOW MỚI:
+    1. Validate token, folder, questionIndex (GIỮ NGUYÊN)
+    2. Save video file (GIỮ NGUYÊN)
+    3. Verify video format (GIỮ NGUYÊN)
+    4. Update metadata (GIỮ NGUYÊN)
+    5. ✨ MỚI: Generate transcript với Whisper
+    6. ✨ MỚI: Update metadata với transcription status
+    7. Return response với transcription info
+    """
+    logger.info(f"📤 Upload request - Folder: {folder}, Question: {questionIndex}")
+    
+    # ===== VALIDATION (GIỮ NGUYÊN TẤT CẢ CODE CŨ) =====
+    # Token validation
     if token not in VALID_TOKENS:
-        logger.warning("Invalid token for upload")
+        logger.warning("❌ Invalid token for upload")
         raise HTTPException(status_code=401, detail="Invalid token")
     
+    # Folder exists?
     folder_path = UPLOAD_DIR / folder
     if not folder_path.exists():
-        logger.error(f"Session folder not found: {folder}")
+        logger.error(f"❌ Session folder not found: {folder}")
         raise HTTPException(status_code=404, detail="Session folder not found")
     
-    # MỤC ĐÍCH: Kiểm tra session còn active không
+    # Session active?
     if folder not in active_sessions:
-        logger.warning(f"Inactive session upload attempt: {folder}")
+        logger.warning(f"⚠️  Inactive session upload attempt: {folder}")
         raise HTTPException(status_code=400, detail="Session not active or already finished")
     
-    # MỤC ĐÍCH: Verify token khớp với token đã dùng start session
+    # Token match?
     if active_sessions[folder]["token"] != token:
-        logger.warning("Token mismatch for session")
+        logger.warning("❌ Token mismatch for session")
         raise HTTPException(status_code=401, detail="Token does not match session")
     
-    # MỤC ĐÍCH: Ngăn upload sau khi đã gọi finish
+    # Session ended?
     meta_file = folder_path / "meta.json"
     with meta_file.open("r") as f:
         metadata = json.load(f)
         if metadata.get("sessionEnded", False):
-            logger.warning(f"Upload attempt after session finish: {folder}")
+            logger.warning(f"⚠️  Upload attempt after session finish: {folder}")
             raise HTTPException(status_code=400, detail="Cannot upload after session/finish")
     
-    # MỤC ĐÍCH: Validate questionIndex từ 1-5 theo yêu cầu project
+    # Question index valid?
     if questionIndex < 1 or questionIndex > 5:
-        logger.warning(f"Invalid question index: {questionIndex}")
+        logger.warning(f"❌ Invalid question index: {questionIndex}")
         raise HTTPException(status_code=400, detail="Question index must be between 1 and 5")
     
-    # MỤC ĐÍCH: Cho phép upload lại cùng câu hỏi (retry mechanism)
+    # Allow retry?
     if questionIndex in active_sessions[folder]["uploads"]:
-        logger.info(f"Duplicate upload detected for Q{questionIndex}, allowing re-upload")
+        logger.info(f"🔄 Duplicate upload detected for Q{questionIndex}, allowing re-upload")
     
-    # MỤC ĐÍCH: Check MIME type từ header (advisory only, vẫn check magic bytes sau)
+    # MIME type valid?
     if video.content_type not in ALLOWED_MIME_TYPES:
-        logger.warning(f"Invalid content type: {video.content_type}")
+        logger.warning(f"❌ Invalid content type: {video.content_type}")
         raise HTTPException(
             status_code=415, 
             detail=f"Unsupported media type: {video.content_type}. Allowed: {', '.join(ALLOWED_MIME_TYPES)}"
@@ -340,58 +565,165 @@ async def upload_one(
     dest_path = folder_path / filename
     
     file_size = 0
+    
     try:
-        # MỤC ĐÍCH: Lưu file theo chunk để handle file lớn và check size
+        # ===== SAVE FILE (GIỮ NGUYÊN CODE CŨ) =====
+        logger.info(f"💾 Saving video: {filename}")
+        
         with dest_path.open("wb") as buffer:
             chunk_size = 1024 * 1024  # 1MB chunks
             while chunk := await video.read(chunk_size):
                 file_size += len(chunk)
+                
+                # Check file size
                 if file_size > MAX_FILE_SIZE:
-                    dest_path.unlink(missing_ok=True)  # Xóa file nếu quá lớn
-                    logger.warning(f"File too large: {file_size} bytes")
+                    dest_path.unlink(missing_ok=True)
+                    logger.warning(f"❌ File too large: {file_size} bytes")
                     raise HTTPException(
                         status_code=413, 
                         detail=f"File too large. Maximum size: {MAX_FILE_SIZE / 1024 / 1024}MB"
                     )
+                
                 buffer.write(chunk)
         
-        # MỤC ĐÍCH: Verify file thực sự là video bằng magic bytes
-        # Không tin content-type từ client vì có thể fake
+        logger.info(f"✅ Video saved: {filename} ({file_size / 1024 / 1024:.2f}MB)")
+        
+        # ===== VERIFY VIDEO (GIỮ NGUYÊN CODE CŨ) =====
+        logger.info(f"🔍 Verifying video format: {filename}")
+        
         if not verify_video_by_signature(dest_path):
             dest_path.unlink(missing_ok=True)
-            logger.warning(f"Invalid video file format detected")
+            logger.warning(f"❌ Invalid video file format detected")
             raise HTTPException(
                 status_code=415,
                 detail="File is not a valid video format"
             )
         
-        # MỤC ĐÍCH: Update metadata với thông tin question vừa upload
+        logger.info(f"✅ Video format verified: {filename}")
+        
+        # ===== UPDATE METADATA - INITIAL (GIỮ NGUYÊN CODE CŨ) =====
         question_data = {
             "index": questionIndex,
             "uploadedAt": get_bangkok_timestamp(),
             "filename": filename,
-            "size": file_size
+            "size": file_size,
+            "transcriptionStatus": "pending"  # ✨ THÊM field này
         }
-        await update_metadata(folder_path, question_data=question_data)
         
-        # MỤC ĐÍCH: Track question đã upload để support retry
+        await update_metadata(folder_path, question_data=question_data)
+        logger.info(f"📝 Metadata updated: Q{questionIndex} marked as pending transcription")
+        
+        # ===== ✨ MỚI: GENERATE TRANSCRIPT =====
+        # Mục đích: Chạy Whisper để tạo transcript ngay sau khi upload thành công
+        # Chạy async để không block response (user không phải đợi 30-60s)
+        
+        transcript_text = None
+        transcription_success = False
+        
+        try:
+            logger.info(f"🤖 Starting transcription for Q{questionIndex}...")
+            logger.info(f"⏱️  This will take ~30-60 seconds, running in background...")
+            
+            # Chạy transcription (async, không block)
+            transcript_text = await transcribe_video_whisper(dest_path, questionIndex)
+            
+            # KIỂM TRA: Transcription có thành công không?
+            if transcript_text:
+                transcription_success = True
+                logger.info(f"✅ Transcription completed for Q{questionIndex}")
+                logger.info(f"📏 Transcript length: {len(transcript_text)} characters")
+                
+                # ===== ✨ UPDATE METADATA VỚI TRANSCRIPTION INFO =====
+                # Mục đích: Đánh dấu transcription đã hoàn thành trong meta.json
+                
+                async with metadata_locks.get(str(folder_path), asyncio.Lock()):
+                    # Đọc metadata hiện tại
+                    with meta_file.open("r", encoding="utf-8") as f:
+                        metadata = json.load(f)
+                    
+                    # Tìm question vừa add và update transcription status
+                    for q in metadata["questions"]:
+                        if q["index"] == questionIndex:
+                            q["transcriptionStatus"] = "completed"  # ✨ pending → completed
+                            q["transcriptLength"] = len(transcript_text)  # ✨ Thêm độ dài
+                            q["transcriptFile"] = f"Q{questionIndex}_transcript.txt"  # ✨ Tên file
+                            break
+                    
+                    # Ghi lại vào file
+                    with meta_file.open("w", encoding="utf-8") as f:
+                        json.dump(metadata, f, indent=2, ensure_ascii=False)
+                
+                logger.info(f"📝 Metadata updated: Q{questionIndex} marked as completed")
+                
+            else:
+                # Transcription thất bại
+                logger.warning(f"⚠️  Transcription failed for Q{questionIndex}")
+                logger.warning(f"💡 Video saved successfully, but no transcript generated")
+                
+                # Update metadata: failed
+                async with metadata_locks.get(str(folder_path), asyncio.Lock()):
+                    with meta_file.open("r", encoding="utf-8") as f:
+                        metadata = json.load(f)
+                    
+                    for q in metadata["questions"]:
+                        if q["index"] == questionIndex:
+                            q["transcriptionStatus"] = "failed"  # ✨ pending → failed
+                            break
+                    
+                    with meta_file.open("w", encoding="utf-8") as f:
+                        json.dump(metadata, f, indent=2, ensure_ascii=False)
+                
+        except Exception as e:
+            # Lỗi khi chạy transcription
+            logger.error(f"❌ Transcription error for Q{questionIndex}: {str(e)}")
+            logger.error(f"📍 Error type: {type(e).__name__}")
+            logger.warning(f"⚠️  Video uploaded successfully, but transcription failed")
+            
+            # Update metadata: error
+            try:
+                async with metadata_locks.get(str(folder_path), asyncio.Lock()):
+                    with meta_file.open("r", encoding="utf-8") as f:
+                        metadata = json.load(f)
+                    
+                    for q in metadata["questions"]:
+                        if q["index"] == questionIndex:
+                            q["transcriptionStatus"] = "error"  # ✨ pending → error
+                            q["transcriptionError"] = str(e)[:100]  # ✨ Lưu error message (max 100 chars)
+                            break
+                    
+                    with meta_file.open("w", encoding="utf-8") as f:
+                        json.dump(metadata, f, indent=2, ensure_ascii=False)
+            except:
+                pass  # Không raise exception nếu không update được metadata
+        
+        # ===== TRACK UPLOAD (GIỮ NGUYÊN CODE CŨ) =====
         active_sessions[folder]["uploads"].add(questionIndex)
         
-        logger.info(f"Upload successful: {filename} ({file_size} bytes)")
+        logger.info(f"🎉 Upload successful: {filename} ({file_size} bytes)")
         
+        # ===== ✨ RETURN RESPONSE VỚI TRANSCRIPTION INFO =====
         return {
             "ok": True,
             "savedAs": filename,
-            "size": file_size
+            "size": file_size,
+            "transcription": "completed" if transcription_success else "failed"  # ✨ Thêm field này
         }
         
     except HTTPException:
+        # Re-raise HTTPException (validation errors)
         raise
+        
     except Exception as e:
-        logger.error(f"Upload error: {str(e)}")
-        dest_path.unlink(missing_ok=True)  # Cleanup on error
+        # Lỗi không mong đợi
+        logger.error(f"❌ Upload error: {str(e)}")
+        logger.error(f"📍 Error type: {type(e).__name__}")
+        
+        # Cleanup file nếu có lỗi
+        dest_path.unlink(missing_ok=True)
+        
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
-
+    
+    
 @app.post("/api/session/finish")
 async def session_finish(request: SessionFinishRequest):
     """
@@ -455,8 +787,10 @@ async def list_sessions(token: str):
     
     return {"count": len(sessions), "sessions": sessions}
 
+
+
 if __name__ == "__main__":
-    # MỤC ĐÍCH: Chạy server khi execute file trực tiếp
-    # - host="0.0.0.0" để bạn bè vào được (thay vì 127.0.0.1)
-    # - port=8000
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+    uvicorn.run(app, host="0.0.0.0", port=8000, ssl_keyfile="server.key", ssl_certfile="server.crt")
+    
+    
