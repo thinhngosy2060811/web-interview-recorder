@@ -11,15 +11,44 @@ import json
 import re
 import logging
 import uvicorn
-import whisper  # OpenAI Whisper cho Speech-to-Text
-import subprocess  # Để chạy FFmpeg command
-import asyncio  # Để chạy transcription không block server
-from typing import Optional #type hints cho python
+import whisper 
+import subprocess 
+import asyncio  
+from typing import Optional 
+import random
 
-# --- Logging Configuration ---
-# MỤC ĐÍCH: Ghi log để debug và theo dõi hoạt động hệ thống
-# - Lưu vào file app.log và hiển thị trên console
-# - Format có timestamp, level (INFO/ERROR), và message
+FIXED_QUESTIONS = [
+    "Please introduce yourself and briefly describe your background.",
+    "Why are you interested in working as a Data Analyst?"
+]
+
+QUESTION_POOL = [
+    # Data Cleaning & Preparation (3 câu)
+    "How would you handle missing or inconsistent data in a dataset?",
+    "Describe the steps you usually take to clean a messy dataset.",
+    "What techniques do you use to detect outliers?",
+    
+    # SQL Skills (3 câu)
+    "What SQL functions or commands do you use most often, and why?",
+    "How would you find duplicate records in a table using SQL?",
+    "Explain the difference between INNER JOIN and LEFT JOIN.",
+    
+    # Business Analysis (4 câu)
+    "How do you determine which metrics or KPIs matter for a business problem?",
+    "What steps do you follow when starting a new analysis project?",
+    "Explain a situation where your analysis influenced a business decision.",
+    "How do you validate whether your findings are reliable?",
+    
+    # Visualization (2 câu)
+    "How do you decide which chart type is appropriate for the data?",
+    "Describe a dashboard you built and what decisions it helped support.",
+    
+    # Statistical Thinking (3 câu)
+    "Explain the difference between correlation and causation.",
+    "How would you explain p-value to someone without a statistics background?",
+    "You find a strong correlation in the data. What steps do you take before presenting it?"
+]
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -336,30 +365,26 @@ async def transcribe_video_whisper(video_path: Path, question_index: int) -> Opt
         logger.error(f"Traceback: {traceback.format_exc()}")
         return None
 
-async def create_metadata(folder_path: Path, username: str) -> dict:
-    """
-    MỤC ĐÍCH: Tạo file meta.json ban đầu khi start session
-    - Chứa thông tin: userName, timestamps, timezone, questions list
-    - sessionEnded = False để track session còn active
-    """
+async def create_metadata(folder_path: Path, username: str, questions_list: list) -> dict:
+    questions_dict = [
+        {"index": i + 1, "text": question}
+        for i, question in enumerate(questions_list)
+    ]
+    
     metadata = {
         "userName": username,
         "sessionStartTime": get_bangkok_timestamp(),
         "timeZone": "Asia/Bangkok",
+        "interviewQuestions": questions_dict,
         "questions": [],
         "questionsCount": 0,
         "sessionEnded": False,
         "sessionEndTime": None
     }
-    
     meta_file = folder_path / "meta.json"
-    
-    # MỤC ĐÍCH: Async lock để tránh race condition
     async with asyncio.Lock():
         with meta_file.open("w", encoding="utf-8") as f:
             json.dump(metadata, f, indent=2, ensure_ascii=False)
-    
-    logger.info(f"Created metadata for session: {folder_path.name}")
     return metadata
 
 async def update_metadata(folder_path: Path, question_data: dict = None, finalize: bool = False, questions_count: int = None):
@@ -477,7 +502,10 @@ async def session_start(request: SessionStartRequest):
             counter += 1
     
     folder_path.mkdir(parents=True, exist_ok=True)
-    await create_metadata(folder_path, request.userName)
+    random_questions = random.sample(QUESTION_POOL, 3)
+    selected_questions = FIXED_QUESTIONS + random_questions
+    
+    await create_metadata(folder_path, request.userName, selected_questions)
     
     # MỤC ĐÍCH: Track session để check khi upload và finish
     active_sessions[folder_name] = {
@@ -490,7 +518,8 @@ async def session_start(request: SessionStartRequest):
     
     return {
         "ok": True,
-        "folder": folder_name
+        "folder": folder_name,
+        "questions": selected_questions
     }
 
 @app.post("/api/upload-one")
