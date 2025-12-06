@@ -1,0 +1,8 @@
+2025-12-06 11:52:23,271 - __main__ - INFO - Loading Whisper model (small)... This may take 1-2 minutes on first run
+2025-12-06 11:52:23,271 - __main__ - INFO - Model will be downloaded (~244MB) if not exists
+2025-12-06 11:52:27,271 - __main__ - INFO - Whisper model loaded successfully!
+2025-12-06 11:52:27,271 - __main__ - INFO - Model info: small (244MB, ~90% accuracy)
+2025-12-06 11:58:31,292 - __main__ - ERROR - ❌ CRITICAL: GEMINI_API_KEY not found in .env file!
+2025-12-06 11:58:31,293 - __main__ - ERROR - ❌ Cannot initialize Gemini - No API key provided
+2025-12-06 11:58:31,293 - __main__ - INFO - Loading Whisper model (small)... This may take a while on first run.
+2025-12-06 11:58:34,953 - __main__ - INFO - ✅ Whisper model loaded successfully!
