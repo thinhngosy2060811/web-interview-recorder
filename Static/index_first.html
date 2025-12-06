@@ -802,12 +802,12 @@
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 mediaRecorder.stop();
             }
-            mediaRecorder = null; 
+            mediaRecorder = null; // ✅ QUAN TRỌNG: Set null để giải phóng
             
             pendingVideoBlob = null;
             recordedChunks = [];
             
-         
+            // ✅ THÊM: Reset AI analysis state
             aiAnalysis = {
                 totalFrames: 0,
                 lookingAwayFrames: 0,
