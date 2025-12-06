@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException, Form, Request
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form, Request, BackgroundTasks
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -194,175 +194,67 @@ def verify_video_by_signature(file_path: Path) -> bool:
         logger.error(f"Error reading file signature: {e}")
         return False
 
+def convert_to_mp4(input_path: Path):
+    """Dùng FFmpeg convert WebM sang MP4"""
+    try:
+        output_path = input_path.with_suffix(".mp4")
+        command = [
+            "ffmpeg", "-y", "-i", str(input_path),
+            "-c:v", "libx264", "-preset", "fast",
+            "-c:a", "aac", str(output_path)
+        ]
+        subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        logger.info(f"✅ Converted to MP4: {output_path.name}")
+        return output_path.name
+    except Exception as e:
+        logger.error(f"❌ FFmpeg conversion failed: {e}")
+        return None
+
 async def transcribe_video_whisper(video_path: Path, question_index: int) -> Optional[str]:
-    """
-    CHỨC NĂNG: Chuyển video thành text transcript sử dụng OpenAI Whisper
-    
-    QUY TRÌNH:
-    1. Extract audio từ video file (.webm → .wav) bằng FFmpeg
-    2. Chạy Whisper model để transcribe audio → text
-    3. Format kết quả với timestamps từng câu
-    4. Lưu vào file Q<N>_transcript.txt
-    5. Cleanup file audio tạm
-    
-    Args:
-        video_path: Đường dẫn đến file video (VD: uploads/folder/Q1.webm)
-        question_index: Số thứ tự câu hỏi (1-5)
-    
-    Returns:
-        str: Nội dung transcript, hoặc None nếu thất bại
-    
-    Examples:
-        >>> await transcribe_video_whisper(Path("Q1.webm"), 1)
-        "Hello, my name is John..."
-    """
-    
-    # KIỂM TRA: Model đã được load chưa?
+    """Chuyển đổi Video sang Text dùng Whisper"""
     if WHISPER_MODEL is None:
-        logger.warning("Whisper model not loaded, skipping transcription")
-        logger.warning("Install: pip install openai-whisper ffmpeg-python")
         return None
     
     try:
-        # ===== BƯỚC 1: EXTRACT AUDIO TỪ VIDEO =====
-        # Mục đích: Whisper chỉ nhận audio, không nhận video
-        # Format: WAV 16kHz mono (theo yêu cầu của Whisper)
+        # 1. Extract audio
+        audio_path = video_path.with_suffix('.wav')
+        subprocess.run([
+            'ffmpeg', '-i', str(video_path), '-vn', '-acodec', 'pcm_s16le',
+            '-ar', '16000', '-ac', '1', str(audio_path), '-y', '-loglevel', 'error'
+        ], check=False, timeout=60)
         
-        audio_path = video_path.with_suffix('.wav')  # Q1.webm → Q1.wav
-        
-        logger.info(f"[Q{question_index}] Extracting audio from {video_path.name}...")
-        logger.info(f"Output: {audio_path.name}")
-        
-        # Chạy FFmpeg command
-        # -i: input file
-        # -vn: không lấy video (only audio)
-        # -acodec pcm_s16le: audio codec (WAV format)
-        # -ar 16000: sample rate 16kHz (Whisper requirement)
-        # -ac 1: mono channel (1 channel, không stereo)
-        # -y: overwrite nếu file đã tồn tại
-        # -loglevel error: chỉ show error, không show info
-        result = subprocess.run([
-            'ffmpeg',
-            '-i', str(video_path),      # Input: Q1.webm
-            '-vn',                        # No video
-            '-acodec', 'pcm_s16le',      # Audio codec cho WAV
-            '-ar', '16000',               # Sample rate 16kHz
-            '-ac', '1',                   # Mono (1 channel)
-            str(audio_path),             # Output: Q1.wav
-            '-y',                         # Overwrite
-            '-loglevel', 'error'         # Chỉ show errors
-        ], capture_output=True, text=True, timeout=60)  # Timeout 60s
-        
-        # KIỂM TRA: FFmpeg có chạy thành công không?
-        if result.returncode != 0:
-            logger.error(f"FFmpeg failed: {result.stderr}")
-            logger.error("Check: ffmpeg -version")
-            return None
-        
-        logger.info(f"Audio extracted: {audio_path.name} ({audio_path.stat().st_size // 1024}KB)")
-        
-        # ===== BƯỚC 2: TRANSCRIBE BẰNG WHISPER =====
-        # Mục đích: Chuyển audio → text
-        # Chạy trong thread pool để không block server (vì Whisper chậm 30-60s)
-        
-        logger.info(f"[Q{question_index}] Transcribing with Whisper (small model)...")
-        logger.info(f"Expected time: ~30-60 seconds for 1-minute video")
-        
-        # Run trong thread pool (asyncio.to_thread) để không block event loop
+        # 2. Transcribe (Chạy trong thread riêng để không block server)
+        logger.info(f"🎤 Transcribing Q{question_index}...")
         whisper_result = await asyncio.to_thread(
             WHISPER_MODEL.transcribe,
-            str(audio_path),              # Input audio file
-            language='vi',                 # 'en' = English, 'vi' = Vietnamese, None = auto-detect
-            task='transcribe',            # 'transcribe' hoặc 'translate' (translate → English)
-            fp16=False,                   # Tắt FP16 nếu không có GPU (CPU mode)
-            verbose=False,                # Không print progress
-            temperature=0.0,              # Temperature 0 = deterministic (same input → same output)
-            compression_ratio_threshold=2.4,  # Detect hallucinations
-            logprob_threshold=-1.0,       # Confidence threshold
-            no_speech_threshold=0.6       # Detect silent parts
+            str(audio_path),
+            language='vi',
+            fp16=False
         )
         
-        logger.info(f"Transcription completed!")
-        logger.info(f"Detected language: {whisper_result.get('language', 'unknown')}")
-        logger.info(f"Text length: {len(whisper_result['text'])} characters")
-        logger.info(f"Segments: {len(whisper_result.get('segments', []))} parts")
+        # 3. Format Transcript
+        transcript_text = f"=== TRANSCRIPT Q{question_index} ===\n"
+        transcript_text += f"Time: {get_bangkok_timestamp()}\n\n"
+        transcript_text += whisper_result['text'].strip() + "\n\n"
+        transcript_text += "--- TIMESTAMPS ---\n"
         
-        # ===== BƯỚC 3: FORMAT TRANSCRIPT =====
-        # Mục đích: Tạo file text dễ đọc với timestamps
-        
-        transcript_text = f"=" * 60 + "\n"
-        transcript_text += f"QUESTION {question_index} TRANSCRIPT\n"
-        transcript_text += f"=" * 60 + "\n\n"
-        
-        # Metadata
-        transcript_text += f"Generated at: {get_bangkok_timestamp()}\n"
-        transcript_text += f"Language detected: {whisper_result.get('language', 'unknown').upper()}\n"
-        transcript_text += f"Total duration: {whisper_result.get('segments', [{}])[-1].get('end', 0):.2f} seconds\n"
-        transcript_text += f"Total segments: {len(whisper_result.get('segments', []))}\n"
-        transcript_text += f"\n" + "-" * 60 + "\n"
-        
-        # Full text (không có timestamps)
-        transcript_text += f"FULL TEXT\n"
-        transcript_text += f"-" * 60 + "\n"
-        transcript_text += whisper_result['text'].strip() + "\n"
-        transcript_text += f"\n" + "-" * 60 + "\n"
-        
-        # Segments with timestamps (chi tiết từng câu)
-        transcript_text += f"DETAILED SEGMENTS (with timestamps)\n"
-        transcript_text += f"-" * 60 + "\n\n"
-        
-        for i, segment in enumerate(whisper_result.get('segments', []), 1):
-            start = segment['start']      # Thời gian bắt đầu (giây)
-            end = segment['end']          # Thời gian kết thúc (giây)
-            text = segment['text'].strip()  # Nội dung text
+        for segment in whisper_result.get('segments', []):
+            start = segment['start']
+            end = segment['end']
+            text = segment['text'].strip()
+            transcript_text += f"[{start//60:02.0f}:{start%60:05.2f} -> {end//60:02.0f}:{end%60:05.2f}] {text}\n"
             
-            # Format: [MM:SS - MM:SS] Text
-            transcript_text += f"[{start//60:02.0f}:{start%60:05.2f} → {end//60:02.0f}:{end%60:05.2f}] {text}\n"
-        
-        transcript_text += f"\n" + "=" * 60 + "\n"
-        transcript_text += f"END OF TRANSCRIPT\n"
-        transcript_text += f"=" * 60 + "\n"
-        # ===== BƯỚC 4: LƯU FILE TRANSCRIPT =====
-        # Mục đích: Lưu transcript vào file Q<N>_transcript.txt
-        
+        # 4. Save to file
         transcript_file = video_path.parent / f"Q{question_index}_transcript.txt"
         transcript_file.write_text(transcript_text, encoding='utf-8')
+        logger.info(f"📝 Transcript saved: {transcript_file.name}")
         
-        logger.info(f"Transcript saved: {transcript_file.name}")
-        logger.info(f"File size: {transcript_file.stat().st_size // 1024}KB")
-        
-        # ===== BƯỚC 5: CLEANUP =====
-        # Mục đích: Xóa file audio tạm để tiết kiệm disk space
-        
-        try:
-            audio_path.unlink(missing_ok=True)  # Xóa Q1.wav
-            logger.info(f"Cleaned up: {audio_path.name}")
-        except Exception as e:
-            logger.warning(f"Could not delete temp audio file: {e}")
-        
-        # Trả về full text (không có timestamps)
+        # Cleanup
+        audio_path.unlink(missing_ok=True)
         return whisper_result['text'].strip()
-        
-    except subprocess.TimeoutExpired:
-        # FFmpeg chạy quá lâu (> 60s)
-        logger.error(f"FFmpeg timeout - video quá dài hoặc bị lỗi")
-        return None
-        
-    except FileNotFoundError as e:
-        # FFmpeg không được cài đặt
-        logger.error(f"FFmpeg not found: {e}")
-        logger.error("Install FFmpeg:")
-        logger.error("   - Windows: choco install ffmpeg")
-        logger.error("   - Mac: brew install ffmpeg")
-        logger.error("   - Ubuntu: sudo apt install ffmpeg")
-        return None
-        
+
     except Exception as e:
-        # Lỗi khác (Whisper error, file error, etc)
-        logger.error(f"Transcription error for Q{question_index}: {str(e)}")
-        logger.error(f"Error type: {type(e).__name__}")
-        import traceback
-        logger.error(f"Traceback: {traceback.format_exc()}")
+        logger.error(f"❌ Transcription error: {e}")
         return None
 
 async def create_metadata(folder_path: Path, username: str, questions_list: list) -> dict:
@@ -441,6 +333,50 @@ async def update_metadata(folder_path: Path, question_data: dict = None, finaliz
         # GHI lại vào file
         with meta_file.open("w", encoding="utf-8") as f:
             json.dump(metadata, f, indent=2, ensure_ascii=False)
+
+async def background_transcribe(folder_path: Path, video_path: Path, question_index: int):
+    """
+    Hàm chạy background để transcribe video
+    Chạy SONG SONG với response trả về client
+    """
+    try:
+        logger.info(f"🎤 [Background] Starting transcription for Q{question_index}...")
+        
+        if WHISPER_MODEL is None:
+            logger.warning(f"⚠️ Whisper model not loaded, skipping Q{question_index}")
+            return
+        
+        # Chạy Whisper
+        transcript_text = await transcribe_video_whisper(video_path, question_index)
+        
+        if transcript_text:
+            # Update metadata khi xong
+            await update_metadata(folder_path, question_data={
+                "index": question_index,
+                "transcriptionStatus": "completed",
+                "transcriptFile": f"Q{question_index}_transcript.txt"
+            })
+            logger.info(f"✅ [Background] Transcription completed for Q{question_index}")
+        else:
+            # Đánh dấu failed
+            await update_metadata(folder_path, question_data={
+                "index": question_index,
+                "transcriptionStatus": "failed"
+            })
+            logger.error(f"❌ [Background] Transcription failed for Q{question_index}")
+            
+    except Exception as e:
+        logger.error(f"❌ [Background] Transcription error Q{question_index}: {e}")
+        # Đánh dấu failed trong metadata
+        try:
+            await update_metadata(folder_path, question_data={
+                "index": question_index,
+                "transcriptionStatus": "failed",
+                "transcriptionError": str(e)
+            })
+        except:
+            pass
+
 
 # --- Home Page ---
 @app.get("/", response_class=HTMLResponse)
@@ -524,234 +460,98 @@ async def session_start(request: SessionStartRequest):
 
 @app.post("/api/upload-one")
 async def upload_one(
+    background_tasks: BackgroundTasks,
     token: str = Form(...),
     folder: str = Form(...),
     questionIndex: int = Form(...),
-    video: UploadFile = File(...)
+    video: UploadFile = File(...),
+    analysisData: str = Form(...)
 ):
     """
-    MỤC ĐÍCH: Upload 1 video cho 1 câu hỏi
-    
-    FLOW MỚI:
-    1. Validate token, folder, questionIndex (GIỮ NGUYÊN)
-    2. Save video file (GIỮ NGUYÊN)
-    3. Verify video format (GIỮ NGUYÊN)
-    4. Update metadata (GIỮ NGUYÊN)
-    5. ✨ MỚI: Generate transcript với Whisper
-    6. ✨ MỚI: Update metadata với transcription status
-    7. Return response với transcription info
+    FLOW: Upload -> Save WebM -> Verify -> Convert MP4 -> Save Meta -> Transcribe -> Update Meta
     """
-    logger.info(f"📤 Upload request - Folder: {folder}, Question: {questionIndex}")
+    logger.info(f"Upload request - Folder: {folder}, Question: {questionIndex}")
     
-    # ===== VALIDATION (GIỮ NGUYÊN TẤT CẢ CODE CŨ) =====
-    # Token validation
-    if token not in VALID_TOKENS:
-        logger.warning("❌ Invalid token for upload")
-        raise HTTPException(status_code=401, detail="Invalid token")
-    
-    # Folder exists?
+    # 1. Validation
+    if token not in VALID_TOKENS: raise HTTPException(401, "Invalid token")
     folder_path = UPLOAD_DIR / folder
-    if not folder_path.exists():
-        logger.error(f"❌ Session folder not found: {folder}")
-        raise HTTPException(status_code=404, detail="Session folder not found")
+    if not folder_path.exists(): raise HTTPException(404, "Session not found")
+    if folder not in active_sessions: raise HTTPException(400, "Session inactive")
+    if active_sessions[folder]["token"] != token: raise HTTPException(401, "Token mismatch")
     
-    # Session active?
-    if folder not in active_sessions:
-        logger.warning(f"⚠️  Inactive session upload attempt: {folder}")
-        raise HTTPException(status_code=400, detail="Session not active or already finished")
-    
-    # Token match?
-    if active_sessions[folder]["token"] != token:
-        logger.warning("❌ Token mismatch for session")
-        raise HTTPException(status_code=401, detail="Token does not match session")
-    
-    # Session ended?
     meta_file = folder_path / "meta.json"
     with meta_file.open("r") as f:
-        metadata = json.load(f)
-        if metadata.get("sessionEnded", False):
-            logger.warning(f"⚠️  Upload attempt after session finish: {folder}")
-            raise HTTPException(status_code=400, detail="Cannot upload after session/finish")
+        if json.load(f).get("sessionEnded", False):
+            raise HTTPException(400, "Session finished")
     
-    # Question index valid?
-    if questionIndex < 1 or questionIndex > 5:
-        logger.warning(f"❌ Invalid question index: {questionIndex}")
-        raise HTTPException(status_code=400, detail="Question index must be between 1 and 5")
-    
-    # Allow retry?
-    if questionIndex in active_sessions[folder]["uploads"]:
-        logger.info(f"🔄 Duplicate upload detected for Q{questionIndex}, allowing re-upload")
-    
-    # MIME type valid?
-    if video.content_type not in ALLOWED_MIME_TYPES:
-        logger.warning(f"❌ Invalid content type: {video.content_type}")
-        raise HTTPException(
-            status_code=415, 
-            detail=f"Unsupported media type: {video.content_type}. Allowed: {', '.join(ALLOWED_MIME_TYPES)}"
-        )
-    
+    # 2. Save Video
     filename = f"Q{questionIndex}.webm"
     dest_path = folder_path / filename
-    
     file_size = 0
     
     try:
-        # ===== SAVE FILE (GIỮ NGUYÊN CODE CŨ) =====
-        logger.info(f"💾 Saving video: {filename}")
-        
         with dest_path.open("wb") as buffer:
-            chunk_size = 1024 * 1024  # 1MB chunks
+            chunk_size = 1024 * 1024
             while chunk := await video.read(chunk_size):
                 file_size += len(chunk)
-                
-                # Check file size
                 if file_size > MAX_FILE_SIZE:
                     dest_path.unlink(missing_ok=True)
-                    logger.warning(f"❌ File too large: {file_size} bytes")
-                    raise HTTPException(
-                        status_code=413, 
-                        detail=f"File too large. Maximum size: {MAX_FILE_SIZE / 1024 / 1024}MB"
-                    )
-                
+                    raise HTTPException(413, "File too large")
                 buffer.write(chunk)
-        
-        logger.info(f"✅ Video saved: {filename} ({file_size / 1024 / 1024:.2f}MB)")
-        
-        # ===== VERIFY VIDEO (GIỮ NGUYÊN CODE CŨ) =====
-        logger.info(f"🔍 Verifying video format: {filename}")
         
         if not verify_video_by_signature(dest_path):
             dest_path.unlink(missing_ok=True)
-            logger.warning(f"❌ Invalid video file format detected")
-            raise HTTPException(
-                status_code=415,
-                detail="File is not a valid video format"
-            )
-        
-        logger.info(f"✅ Video format verified: {filename}")
-        
-        # ===== UPDATE METADATA - INITIAL (GIỮ NGUYÊN CODE CŨ) =====
+            raise HTTPException(415, "Invalid video format")
+            
+        # 3. Convert to MP4
+        mp4_filename = convert_to_mp4(dest_path)
+
+        # 4. Initial Metadata (Pending Transcription)
+        try: ai_metrics = json.loads(analysisData)
+        except: ai_metrics = {}
+
         question_data = {
             "index": questionIndex,
             "uploadedAt": get_bangkok_timestamp(),
             "filename": filename,
+            "mp4_filename": mp4_filename,
             "size": file_size,
-            "transcriptionStatus": "pending"  # ✨ THÊM field này
+            "aiAnalysis": ai_metrics,
+            "transcriptionStatus": "pending" # Đánh dấu đang xử lý
         }
         
         await update_metadata(folder_path, question_data=question_data)
-        logger.info(f"📝 Metadata updated: Q{questionIndex} marked as pending transcription")
-        
-        # ===== ✨ MỚI: GENERATE TRANSCRIPT =====
-        # Mục đích: Chạy Whisper để tạo transcript ngay sau khi upload thành công
-        # Chạy async để không block response (user không phải đợi 30-60s)
-        
-        transcript_text = None
-        transcription_success = False
-        
-        try:
-            logger.info(f"🤖 Starting transcription for Q{questionIndex}...")
-            logger.info(f"⏱️  This will take ~30-60 seconds, running in background...")
-            
-            # Chạy transcription (async, không block)
-            transcript_text = await transcribe_video_whisper(dest_path, questionIndex)
-            
-            # KIỂM TRA: Transcription có thành công không?
-            if transcript_text:
-                transcription_success = True
-                logger.info(f"✅ Transcription completed for Q{questionIndex}")
-                logger.info(f"📏 Transcript length: {len(transcript_text)} characters")
-                
-                # ===== ✨ UPDATE METADATA VỚI TRANSCRIPTION INFO =====
-                # Mục đích: Đánh dấu transcription đã hoàn thành trong meta.json
-                
-                async with metadata_locks.get(str(folder_path), asyncio.Lock()):
-                    # Đọc metadata hiện tại
-                    with meta_file.open("r", encoding="utf-8") as f:
-                        metadata = json.load(f)
-                    
-                    # Tìm question vừa add và update transcription status
-                    for q in metadata["questions"]:
-                        if q["index"] == questionIndex:
-                            q["transcriptionStatus"] = "completed"  # ✨ pending → completed
-                            q["transcriptLength"] = len(transcript_text)  # ✨ Thêm độ dài
-                            q["transcriptFile"] = f"Q{questionIndex}_transcript.txt"  # ✨ Tên file
-                            break
-                    
-                    # Ghi lại vào file
-                    with meta_file.open("w", encoding="utf-8") as f:
-                        json.dump(metadata, f, indent=2, ensure_ascii=False)
-                
-                logger.info(f"📝 Metadata updated: Q{questionIndex} marked as completed")
-                
-            else:
-                # Transcription thất bại
-                logger.warning(f"⚠️  Transcription failed for Q{questionIndex}")
-                logger.warning(f"💡 Video saved successfully, but no transcript generated")
-                
-                # Update metadata: failed
-                async with metadata_locks.get(str(folder_path), asyncio.Lock()):
-                    with meta_file.open("r", encoding="utf-8") as f:
-                        metadata = json.load(f)
-                    
-                    for q in metadata["questions"]:
-                        if q["index"] == questionIndex:
-                            q["transcriptionStatus"] = "failed"  # ✨ pending → failed
-                            break
-                    
-                    with meta_file.open("w", encoding="utf-8") as f:
-                        json.dump(metadata, f, indent=2, ensure_ascii=False)
-                
-        except Exception as e:
-            # Lỗi khi chạy transcription
-            logger.error(f"❌ Transcription error for Q{questionIndex}: {str(e)}")
-            logger.error(f"📍 Error type: {type(e).__name__}")
-            logger.warning(f"⚠️  Video uploaded successfully, but transcription failed")
-            
-            # Update metadata: error
-            try:
-                async with metadata_locks.get(str(folder_path), asyncio.Lock()):
-                    with meta_file.open("r", encoding="utf-8") as f:
-                        metadata = json.load(f)
-                    
-                    for q in metadata["questions"]:
-                        if q["index"] == questionIndex:
-                            q["transcriptionStatus"] = "error"  # ✨ pending → error
-                            q["transcriptionError"] = str(e)[:100]  # ✨ Lưu error message (max 100 chars)
-                            break
-                    
-                    with meta_file.open("w", encoding="utf-8") as f:
-                        json.dump(metadata, f, indent=2, ensure_ascii=False)
-            except:
-                pass  # Không raise exception nếu không update được metadata
-        
-        # ===== TRACK UPLOAD (GIỮ NGUYÊN CODE CŨ) =====
         active_sessions[folder]["uploads"].add(questionIndex)
         
-        logger.info(f"🎉 Upload successful: {filename} ({file_size} bytes)")
+        # 5. ✅ ĐẨY TRANSCRIPTION VÀO BACKGROUND
+        # Trả response NGAY cho user, không chờ transcribe
+        if WHISPER_MODEL:
+            background_tasks.add_task(
+                background_transcribe, 
+                folder_path, 
+                dest_path, 
+                questionIndex
+            )
+            transcription_status = "processing"  # Đang xử lý background
+        else:
+            transcription_status = "disabled"  # Whisper không khả dụng
         
-        # ===== ✨ RETURN RESPONSE VỚI TRANSCRIPTION INFO =====
+        logger.info(f"✅ Upload successful: {filename} - Transcription queued in background")
+        
         return {
             "ok": True,
             "savedAs": filename,
-            "size": file_size,
-            "transcription": "completed" if transcription_success else "failed"  # ✨ Thêm field này
+            "convertedTo": mp4_filename,
+            "transcription": transcription_status,  # "processing" hoặc "disabled"
+            "size": file_size
         }
-        
-    except HTTPException:
-        # Re-raise HTTPException (validation errors)
-        raise
-        
+
+    except HTTPException: raise
     except Exception as e:
-        # Lỗi không mong đợi
-        logger.error(f"❌ Upload error: {str(e)}")
-        logger.error(f"📍 Error type: {type(e).__name__}")
-        
-        # Cleanup file nếu có lỗi
+        logger.error(f"Upload error: {str(e)}")
         dest_path.unlink(missing_ok=True)
-        
-        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
-    
+        raise HTTPException(500, f"Upload failed: {str(e)}")
+
     
 @app.post("/api/session/finish")
 async def session_finish(request: SessionFinishRequest):
