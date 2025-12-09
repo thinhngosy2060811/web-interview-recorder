@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException, Form, Request, BackgroundTasks
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,6 +6,9 @@ from pydantic import BaseModel
 from pathlib import Path
 from datetime import datetime
 import pytz
+import sys 
+sys.stdout.reconfigure(encoding='utf-8')
+sys.stderr.reconfigure(encoding='utf-8')
 import asyncio
 import json
 import re
@@ -15,14 +18,33 @@ import subprocess
 import random
 import whisper  
 from typing import Optional
-import google.generativeai as genai
-from typing import Dict, List
-import statistics
-
-import os
+import statistics 
+import google.generativeai as genai 
+from fastapi import BackgroundTasks 
+from typing import Dict, List, Optional, Set
 from dotenv import load_dotenv
+import os 
 
+# Cấu hình AI
+load_dotenv()
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") # Key của bạn
+FILLER_WORDS = ['um', 'uh', 'like', 'you know', 'actually', 'basically', 'literally', 'i mean']
+LAYER1_THRESHOLDS = {
+    "min_word_count": 30,
+    "max_silence_ratio": 0.40,
+    "min_focus_score": 85
+}
 
+WPM_RANGES = {
+    "slow": (0, 100),
+    "good": (100, 160),
+    "fast": (160, 999)
+}
+# Token dành cho ứng viên 
+CANDIDATE_TOKENS = {"thinhbeo", "thanhbusy"}
+# Token dành cho người chấm
+ADMIN_TOKENS = {"luandeptrai","hongraphay"}
+# --- CẤU HÌNH NGÂN HÀNG CÂU HỎI ---
 FIXED_QUESTIONS = [
     "Please introduce yourself and briefly describe your background.",
     "Why are you interested in working as a Data Analyst?"
@@ -66,40 +88,20 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-load_dotenv()
+# --- Load Whisper Model ---
+try:
+    logger.info("Loading Whisper model (small)... This may take a while on first run.")
+    # Model 'small' cân bằng giữa tốc độ và độ chính xác (khoảng 244MB)
+    WHISPER_MODEL = whisper.load_model("small")
+    logger.info("✅ Whisper model loaded successfully!")
+except Exception as e:
+    logger.error(f"Failed to load Whisper model: {e}")
+    logger.warning("⚠️ Transcription feature will be disabled.")
+    WHISPER_MODEL = None
 
-# ✅ FIX 2: ĐỌC API KEY TỪ BIẾN MÔI TRƯỜNG
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-
-# ✅ FIX 3: KIỂM TRA KEY NGAY TỪ ĐẦU
-if not GEMINI_API_KEY:
-    logger.error("❌ CRITICAL: GEMINI_API_KEY not found in .env file!")
-    print("=" * 60)
-    print("⚠️  CẢNH BÁO: Không tìm thấy GEMINI_API_KEY")
-    print("=" * 60)
-    print("Vui lòng tạo file .env với nội dung:")
-    print("GEMINI_API_KEY=your_actual_api_key_here")
-    print("=" * 60)
-
-
-# Filler words tiếng Anh
-FILLER_WORDS = ['um', 'uh', 'like', 'you know', 'actually', 'basically', 'literally', 'i mean']
-
-# Ngưỡng phân loại Layer 1
-LAYER1_THRESHOLDS = {
-    "min_word_count": 30,
-    "max_silence_ratio": 0.40,  # 40%
-    "min_focus_score": 85
-}
-
-# Speaking rate reference (WPM)
-WPM_RANGES = {
-    "slow": (0, 100),
-    "good": (100, 160),
-    "fast": (160, 999)
-}
-
-# Initialize Gemini
+# --- Configuration ---
+app = FastAPI(title="Web Interview Recorder (Integrated)", version="2.0")
+# Khởi tạo gemini
 gemini_model = None
 
 if GEMINI_API_KEY:
@@ -137,21 +139,12 @@ if GEMINI_API_KEY:
         try:
             test_response = gemini_model.generate_content(
                 "Respond with only: OK",
-                generation_config={"max_output_tokens": 200}
+                generation_config={"max_output_tokens": 100}
             )
             
             # ✅ KIỂM TRA FINISH REASON
             if hasattr(test_response, 'candidates') and test_response.candidates:
-                finish_reason = test_response.candidates[0].finish_reason
-                
-                # finish_reason values:
-                # 0 = FINISH_REASON_UNSPECIFIED
-                # 1 = STOP (thành công)
-                # 2 = MAX_TOKENS
-                # 3 = SAFETY
-                # 4 = RECITATION
-                # 5 = OTHER
-                
+                finish_reason = test_response.candidates[0].finish_reason     
                 if finish_reason == 1:  # STOP = success
                     logger.info(f"✅ Gemini test successful: {test_response.text[:50]}")
                 elif finish_reason == 3:  # SAFETY
@@ -177,20 +170,6 @@ if GEMINI_API_KEY:
 else:
     logger.error("❌ Cannot initialize Gemini - No API key provided")
 
-# --- Load Whisper Model ---
-try:
-    logger.info("Loading Whisper model (small)... This may take a while on first run.")
-    # Model 'small' cân bằng giữa tốc độ và độ chính xác (khoảng 244MB)
-    WHISPER_MODEL = whisper.load_model("small")
-    logger.info("✅ Whisper model loaded successfully!")
-except Exception as e:
-    logger.error(f"Failed to load Whisper model: {e}")
-    logger.warning("⚠️ Transcription feature will be disabled.")
-    WHISPER_MODEL = None
-
-# --- Configuration ---
-app = FastAPI(title="Web Interview Recorder (Integrated)", version="2.0")
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -204,8 +183,10 @@ UPLOAD_DIR = BASE_DIR / "uploads"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
+# Mở quyền truy cập vào thư mục uploads để xem video MP4
+app.mount("/uploads", StaticFiles(directory=BASE_DIR / "uploads"), name="uploads")
 
-VALID_TOKENS = {"demo123", "test456", "student2024", "Thịnh", "Hồng", "Thành", "Luân"}
+VALID_TOKENS = CANDIDATE_TOKENS.union(ADMIN_TOKENS)
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 ALLOWED_MIME_TYPES = {"video/webm", "video/mp4"}
 BANGKOK_TZ = pytz.timezone('Asia/Bangkok')
@@ -288,7 +269,7 @@ async def transcribe_video_whisper(video_path: Path, question_index: int) -> Opt
         whisper_result = await asyncio.to_thread(
             WHISPER_MODEL.transcribe,
             str(audio_path),
-            language='vi',
+            language='en',
             fp16=False
         )
         
@@ -322,7 +303,6 @@ async def create_metadata(folder_path: Path, username: str, questions_list: list
         {"index": i + 1, "text": question}
         for i, question in enumerate(questions_list)
     ]
-    
     metadata = {
         "userName": username,
         "sessionStartTime": get_bangkok_timestamp(),
@@ -372,9 +352,6 @@ async def update_metadata(folder_path: Path, question_data: dict = None, finaliz
         
         with meta_file.open("w", encoding="utf-8") as f:
             json.dump(metadata, f, indent=2, ensure_ascii=False)
-
-
-# ============== LAYER 1: QUANTITATIVE ANALYSIS ==============
 
 def calculate_filler_density(transcript_text: str) -> float:
     """
@@ -529,7 +506,7 @@ async def analyze_layer2_ai(
         logger.error("❌ GEMINI_API_KEY not available")
         return {
             "priority": "UNKNOWN",
-            "reason": "Không có API key",
+            "reason": "There no have API key",
             "ai_available": False,
             "error": "GEMINI_API_KEY not set"
         }
@@ -538,15 +515,12 @@ async def analyze_layer2_ai(
         logger.error("❌ Gemini model not initialized")
         return {
             "priority": "UNKNOWN",
-            "reason": "AI model chưa được khởi tạo",
+            "reason": "AI model is not generate",
             "ai_available": False,
             "error": "Gemini model is None"
         }
     
     try:
-        # ============== CONFIGURE LẠI TRONG BACKGROUND TASK ==============
-        genai.configure(api_key=GEMINI_API_KEY)
-        
         # ✅ THÊM SAFETY SETTINGS
         safety_settings = [
             {
@@ -593,6 +567,7 @@ async def analyze_layer2_ai(
 
 **YOUR TASK:**
 Evaluate the candidate's response and assign a priority level for HR review.
+You must answer briefly but fully and to the point
 
 **EVALUATION CRITERIA:**
 1. **Content Relevance**: Does the answer address the question directly?
@@ -603,7 +578,7 @@ Evaluate the candidate's response and assign a priority level for HR review.
 **OUTPUT FORMAT (JSON ONLY):**
 {{
   "priority": "HIGH" | "MEDIUM" | "LOW",
-  "reason": "Brief 1-2 sentence explanation in Vietnamese for HR",
+  "reason": "Brief 1-2 sentence explanation in English for HR",
   "content_score": 0-10,
   "communication_score": 0-10,
   "overall_impression": "positive" | "neutral" | "negative"
@@ -736,23 +711,22 @@ async def calculate_final_ranking(folder_path: Path):
         valid_questions = 0
         
         for q in questions:
-            analysis = q.get("analysis", {})
-            layer1 = analysis.get("layer1_quantitative", {})
-            layer2 = analysis.get("layer2_ai_semantic", {})
+            metrics = q.get("metrics", {})
+            ai_eval = q.get("ai_evaluation", {})
             
-            if layer1:
-                all_metrics["word_counts"].append(layer1.get("word_count", 0))
-                all_metrics["filler_densities"].append(layer1.get("filler_density_percent", 0))
-                all_metrics["silence_ratios"].append(layer1.get("silence_ratio_percent", 0))
-                all_metrics["wpms"].append(layer1.get("speaking_rate_wpm", 0))
-                all_metrics["focus_scores"].append(layer1.get("focus_score", 0))
+            if metrics:
+                all_metrics["word_counts"].append(metrics.get("word_count", 0))
+                all_metrics["filler_densities"].append(metrics.get("filler_density_percent", 0))
+                all_metrics["silence_ratios"].append(metrics.get("silence_ratio_percent", 0))
+                all_metrics["wpms"].append(metrics.get("speaking_rate_wpm", 0))
+                all_metrics["focus_scores"].append(metrics.get("focus_score", 0))
                 valid_questions += 1
             
-            if layer2 and layer2.get("ai_available"):
-                priority = layer2.get("priority", "MEDIUM")
+            if ai_eval and ai_eval.get("ai_available"):
+                priority = ai_eval.get("priority", "MEDIUM")
                 all_metrics["priorities"].append(priority)
-                all_metrics["content_scores"].append(layer2.get("content_score", 5))
-                all_metrics["communication_scores"].append(layer2.get("communication_score", 5))
+                all_metrics["content_scores"].append(ai_eval.get("content_score", 5))
+                all_metrics["communication_scores"].append(ai_eval.get("communication_score", 5))
         
         # ============== CALCULATE AVERAGES ==============
         def safe_mean(lst):
@@ -801,9 +775,6 @@ async def calculate_final_ranking(folder_path: Path):
         # ============== GEMINI OVERALL SUMMARY ==============
         if GEMINI_API_KEY and gemini_model:
             try:
-                # ✅ CONFIGURE LẠI TRONG BACKGROUND TASK
-                genai.configure(api_key=GEMINI_API_KEY)
-                
                 # ✅ THÊM SAFETY SETTINGS
                 safety_settings = [
                     {
@@ -855,11 +826,11 @@ async def calculate_final_ranking(folder_path: Path):
 {full_transcript}
 
 **YOUR TASK:**
-Provide a brief overall assessment (2-3 sentences in Vietnamese) for HR to decide if they should watch the videos.
+Provide a brief overall assessment (2-3 sentences in English) for HR to decide if they should watch the videos.
 
 **OUTPUT FORMAT (JSON ONLY):**
 {{
-  "overall_summary": "2-3 sentence summary in Vietnamese",
+  "overall_summary": "2-3 sentence summary in English",
   "strengths": ["strength 1", "strength 2"],
   "weaknesses": ["weakness 1", "weakness 2"],
   "recommendation": "RECOMMEND" | "NEUTRAL" | "NOT_RECOMMEND"
@@ -873,7 +844,7 @@ Respond with ONLY the JSON object. No markdown, no extra text."""
                     overall_prompt,
                     generation_config={
                         "temperature": 0.3, 
-                        "max_output_tokens": 1048,
+                        "max_output_tokens": 2048,
                         "top_p": 0.95
                     }
                 )
@@ -1042,19 +1013,44 @@ async def background_transcribe(folder_path: Path, video_path: Path, question_in
         logger.info(f"✅ Layer 2 completed - Priority: {layer2_result.get('priority', 'UNKNOWN')}")
         
         # ============== STEP 4: UPDATE METADATA ==============
-        await update_metadata(folder_path, question_data={
-            "index": question_index,
+        analysis_summary = {
             "transcriptionStatus": "completed",
             "transcriptFile": f"Q{question_index}_transcript.txt",
-            "analysis": {
-                "layer1_quantitative": layer1_metrics,
-                "layer2_ai_semantic": layer2_result,
-                "analyzed_at": get_bangkok_timestamp()
+            "analyzed_at": get_bangkok_timestamp(),
+    
+        # Layer 1 metrics 
+            "metrics": {
+                "word_count": layer1_metrics["word_count"],
+                "focus_score": layer1_metrics["focus_score"],
+                "speaking_rate_wpm": layer1_metrics["speaking_rate_wpm"],
+                "wpm_category": layer1_metrics["wpm_category"],
+                "silence_ratio_percent": layer1_metrics["silence_ratio_percent"],
+                "total_pause_seconds": layer1_metrics["total_pause_seconds"],
+                "num_pauses": layer1_metrics["num_pauses"],
+                "filler_density_percent": layer1_metrics["filler_density_percent"],
+                "duration_seconds": layer1_metrics["duration_seconds"],
+                "flagged_as_bad": layer1_metrics["flagged_as_bad"],
+                "flag_reasons": layer1_metrics["flag_reasons"]
+            },
+    
+            # Layer 2 AI evaluation
+            "ai_evaluation": {
+                "priority": layer2_result.get("priority", "UNKNOWN"),
+                "reason": layer2_result.get("reason", "Không có đánh giá"),
+                "content_score": layer2_result.get("content_score", 0),
+                "communication_score": layer2_result.get("communication_score", 0),
+                "overall_impression": layer2_result.get("overall_impression", "neutral"),
+                "ai_available": layer2_result.get("ai_available", False)
             }
+        }
+
+        await update_metadata(folder_path, question_data={
+            "index": question_index,
+            **analysis_summary  # Merge tất cả fields vào question data
         })
-        
+
         logger.info(f"✅ [Background] Full analysis completed for Q{question_index}")
-        
+
         # Cleanup
         audio_path.unlink(missing_ok=True)
         
@@ -1068,19 +1064,20 @@ async def background_transcribe(folder_path: Path, video_path: Path, question_in
             })
         except:
             pass
-
-
 # --- Routes ---
 
 @app.get("/", response_class=HTMLResponse)
 def home():
-    return (BASE_DIR / "static" / "index.html").read_text(encoding="utf-8")
+    return (BASE_DIR / "static" / "index_first.html").read_text(encoding="utf-8")
 
 @app.post("/api/verify-token")
 async def verify_token(request: TokenRequest):
-    if request.token not in VALID_TOKENS:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    return {"ok": True}
+    if request.token in ADMIN_TOKENS:
+        return {"ok": True, "role": "evaluator"}
+    elif request.token in CANDIDATE_TOKENS:
+        return {"ok": True, "role": "candidate"}
+    else:
+        raise HTTPException(status_code=401, detail="Invalid Token")
 
 @app.post("/api/session/start")
 async def session_start(request: SessionStartRequest):
@@ -1102,7 +1099,6 @@ async def session_start(request: SessionStartRequest):
     # 1. Random câu hỏi
     random_questions = random.sample(QUESTION_POOL, 3)
     selected_questions = FIXED_QUESTIONS + random_questions
-    
     await create_metadata(folder_path, request.userName, selected_questions)
     
     active_sessions[folder_name] = {
@@ -1140,7 +1136,7 @@ async def upload_one(
     if active_sessions[folder]["token"] != token: raise HTTPException(401, "Token mismatch")
     
     meta_file = folder_path / "meta.json"
-    with meta_file.open("r") as f:
+    with meta_file.open("r", encoding="utf-8") as f:
         if json.load(f).get("sessionEnded", False):
             raise HTTPException(400, "Session finished")
     
@@ -1166,12 +1162,28 @@ async def upload_one(
         # 3. Convert to MP4
         mp4_filename = convert_to_mp4(dest_path)
 
+        #3.5 Lấy nội dung câu hỏi 
+        question_text = "Unknown question"
+        try:
+            # Đọc lại file meta để lấy text câu hỏi
+            if meta_file.exists():
+                with meta_file.open("r", encoding="utf-8") as f:
+                    meta_temp = json.load(f)
+                    # Tìm câu hỏi có index tương ứng
+                    q_def = next((q for q in meta_temp.get("interviewQuestions", []) if q["index"] == questionIndex), None)
+                    if q_def:
+                        question_text = q_def["text"]
+        except Exception as e:
+            logger.error(f"Failed to fetch question text: {e}")
         # 4. Initial Metadata (Pending Transcription)
         try: ai_metrics = json.loads(analysisData)
-        except: ai_metrics = {}
+        except json.JSONDecodeError as e:
+            logger.warning(f"Invalid analysisData JSON: {e}")
+            ai_metrics = {}
 
         question_data = {
             "index": questionIndex,
+            "text": question_text,
             "uploadedAt": get_bangkok_timestamp(),
             "filename": filename,
             "mp4_filename": mp4_filename,
@@ -1183,38 +1195,37 @@ async def upload_one(
         await update_metadata(folder_path, question_data=question_data)
         active_sessions[folder]["uploads"].add(questionIndex)
         
-        # 5. ✅ ĐẨY TRANSCRIPTION VÀO BACKGROUND
-        # Trả response NGAY cho user, không chờ transcribe
+        # 5. Run Whisper Transcription (Async)
         if WHISPER_MODEL:
             with meta_file.open("r") as f:
                 meta = json.load(f)
                 question_text = next(
                     (q["text"] for q in meta.get("interviewQuestions", []) if q["index"] == questionIndex),
-                    "Unknown question"
-                )
-                
+                "Unknown question"
+                 )
+        
+            try: ai_metrics = json.loads(analysisData)
+            except: ai_metrics = {}
             focus_score = ai_metrics.get("focusScore", 0)
 
             background_tasks.add_task(
-                background_transcribe, 
+                background_transcribe,  # ← TÊN HÀM MỚI
                 folder_path, 
                 dest_path, 
                 questionIndex,
                 question_text,
                 focus_score
             )
-            transcription_status = "processing"  # Đang xử lý background
+            transcription_status = "processing"
         else:
-            transcription_status = "disabled"  # Whisper không khả dụng
-        
-        
-        logger.info(f"✅ Upload successful: {filename} - Transcription queued in background")
-        
+            transcription_status = "disabled"
+
+        # SỬA return statement:
         return {
             "ok": True,
             "savedAs": filename,
             "convertedTo": mp4_filename,
-            "transcription": transcription_status,  # "processing" hoặc "disabled"
+            "transcription": transcription_status,  # ← SỬA CHỖ NÀY
             "size": file_size
         }
 
@@ -1225,20 +1236,18 @@ async def upload_one(
         raise HTTPException(500, f"Upload failed: {str(e)}")
 
 @app.post("/api/session/finish")
-async def session_finish(request: SessionFinishRequest, background_tasks: BackgroundTasks):
+async def session_finish(request: SessionFinishRequest,bg_tasks: BackgroundTasks ):
     if request.folder in active_sessions and active_sessions[request.folder]["token"] != request.token:
         raise HTTPException(401, "Token mismatch")
         
     folder_path = UPLOAD_DIR / request.folder
+    bg_tasks.add_task(calculate_final_ranking, folder_path)
     await update_metadata(folder_path, finalize=True, questions_count=request.questionsCount)
-    
-    # ✅ THÊM: Tính toán final ranking
-    background_tasks.add_task(calculate_final_ranking, folder_path)
     
     if request.folder in active_sessions:
         del active_sessions[request.folder]
     
-    return {"ok": True, "message": "Session finished. Final ranking calculation in progress."}
+    return {"ok": True}
 
 # Endpoint để xem transcript (Optional)
 @app.get("/api/transcript/{folder}/{question_index}")
@@ -1253,6 +1262,90 @@ async def get_transcript(folder: str, question_index: int, token: str):
         "ok": True,
         "content": transcript_file.read_text(encoding='utf-8')
     }
+@app.get("/api/admin/candidates")
+async def get_candidates(token: str):
+    # Check quyền
+    if token not in ADMIN_TOKENS:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    results = []
+    # Quét thư mục uploads lấy danh sách
+    if UPLOAD_DIR.exists():
+        for folder in UPLOAD_DIR.iterdir():
+            if folder.is_dir():
+                # Lấy tên folder làm dữ liệu hiển thị tạm
+                meta_file = folder / "meta.json"
+                if not meta_file.exists():
+                    continue
+                try:
+                    with meta_file.open("r", encoding="utf-8") as f:
+                        metadata = json.load(f)
 
+                    parts = folder.name.split("_")
+                    if len(parts) >= 5:
+                        time_str = f"{parts[0]}/{parts[1]}/{parts[2]} {parts[3]}:{parts[4]}"
+                    else:
+                        time_str = "Unknown"
+                    # Lấy điểm focus của câu đầu tiên (tạm thời để test UI)
+                    qs = metadata.get("questions", [])
+                    final_summary = metadata.get("final_ranking_summary", {})
+                    ai_note = "No data yet"
+                    priority_num = 2
+                    if final_summary and "overall_ai_summary" in final_summary:
+                        overall = final_summary["overall_ai_summary"]
+                        if "overall_summary" in overall:
+                            # Lấy đoạn văn tổng kết
+                            full_text = overall["overall_summary"]
+                            # Cắt ngắn nếu dài quá 20 từ để bảng đỡ bị vỡ
+                            words = full_text.split()
+                            ai_note = " ".join(words[:30]) + "..." if len(words) > 30 else full_text
+                        
+                        # Set Priority tổng
+                        prio = final_summary.get("final_priority", "MEDIUM")
+                        if prio == "HIGH": priority_num = 1
+                        elif prio == "LOW": priority_num = 3
+                    elif qs:
+                        # Lọc ra các câu đã được AI chấm
+                        evaluated_qs = [q for q in qs if q.get("ai_evaluation", {}).get("ai_available")]
+                        
+                        if evaluated_qs:
+                            # Tìm xem có câu nào bị LOW (Yếu) không để cảnh báo ngay
+                            bad_q = next((q for q in evaluated_qs if q["ai_evaluation"].get("priority") == "LOW"), None)
+                            
+                            target_q = bad_q if bad_q else evaluated_qs[-1]
+                            
+                            # --- ĐÂY LÀ DÒNG QUAN TRỌNG NHẤT ---
+                            # Lấy trực tiếp trường "reason" từ JSON
+                            ai_note = target_q["ai_evaluation"].get("reason", "AI processed but no reason provided")
+                            
+                            # Set priority theo câu đó
+                            prio = target_q["ai_evaluation"].get("priority", "MEDIUM")
+                            if prio == "HIGH": priority_num = 1
+                            elif prio == "LOW": priority_num = 3
+                        else:
+                            ai_note = "Waiting for AI..."
+                    # Tính focus trung bình
+                    avg_focus = 0
+                    if qs:
+                        focus_scores = [q.get("aiAnalysis", {}).get("focusScore", 0) for q in qs]
+                        avg_focus = sum(focus_scores) / len(focus_scores) if focus_scores else 0 
+                    folder_url = f"/uploads/{folder.name}"
+                    results.append({
+                        "name": metadata.get("userName","Unknown"), 
+                        "time": time_str,
+                        "priority": priority_num,
+                        "note": ai_note,
+                        "folderUrl": folder_url,
+                        "folder": folder.name,
+                        "focus": round(avg_focus,1)
+                    })
+                    
+                except Exception as e:
+                    logger.error(f"Error reading {folder.name}: {e}")
+                    continue
+    
+    results_sorted = sorted(results, key=lambda x: x.get("priority", 2))
+    return {"candidates": results_sorted}
+     
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

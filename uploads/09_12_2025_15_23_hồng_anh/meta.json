@@ -1,0 +1,70 @@
+{
+  "userName": "Hồng Anh",
+  "sessionStartTime": "2025-12-09T15:23:41.585269+07:00",
+  "timeZone": "Asia/Bangkok",
+  "interviewQuestions": [
+    {
+      "index": 1,
+      "text": "Please introduce yourself and briefly describe your background."
+    },
+    {
+      "index": 2,
+      "text": "Why are you interested in working as a Data Analyst?"
+    },
+    {
+      "index": 3,
+      "text": "You find a strong correlation in the data. What steps do you take before presenting it?"
+    },
+    {
+      "index": 4,
+      "text": "Describe the steps you usually take to clean a messy dataset."
+    },
+    {
+      "index": 5,
+      "text": "What steps do you follow when starting a new analysis project?"
+    }
+  ],
+  "questions": [
+    {
+      "index": 1,
+      "text": "Please introduce yourself and briefly describe your background.",
+      "uploadedAt": "2025-12-09T15:24:19.720027+07:00",
+      "filename": "Q1.webm",
+      "mp4_filename": "Q1.mp4",
+      "size": 479945,
+      "aiAnalysis": {
+        "focusScore": 100,
+        "warnings": []
+      },
+      "transcriptionStatus": "completed",
+      "transcriptFile": "Q1_transcript.txt",
+      "analyzed_at": "2025-12-09T15:24:26.622794+07:00",
+      "metrics": {
+        "word_count": 0,
+        "focus_score": 100,
+        "speaking_rate_wpm": 0,
+        "wpm_category": "unknown",
+        "silence_ratio_percent": 0.0,
+        "total_pause_seconds": 0.0,
+        "num_pauses": 0,
+        "filler_density_percent": 0.0,
+        "duration_seconds": 0,
+        "flagged_as_bad": true,
+        "flag_reasons": [
+          "Too short (0 words < 30)"
+        ]
+      },
+      "ai_evaluation": {
+        "priority": "LOW",
+        "reason": "The candidate provided no response to the introductory question, making it impossible to evaluate their communication skills or background. This indicates a critical failure to engage or a technical issue.",
+        "content_score": 0,
+        "communication_score": 0,
+        "overall_impression": "negative",
+        "ai_available": true
+      }
+    }
+  ],
+  "questionsCount": 0,
+  "sessionEnded": false,
+  "sessionEndTime": null
+}

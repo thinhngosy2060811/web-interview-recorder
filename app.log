@@ -6,3 +6,44 @@
 2025-12-06 11:58:31,293 - __main__ - ERROR - ❌ Cannot initialize Gemini - No API key provided
 2025-12-06 11:58:31,293 - __main__ - INFO - Loading Whisper model (small)... This may take a while on first run.
 2025-12-06 11:58:34,953 - __main__ - INFO - ✅ Whisper model loaded successfully!
+2025-12-09 15:14:22,533 - __main__ - INFO - Loading Whisper model (small)... This may take a while on first run.
+2025-12-09 15:14:27,712 - __main__ - INFO - ✅ Whisper model loaded successfully!
+2025-12-09 15:14:27,712 - __main__ - INFO - ✅ Gemini 2.5 Flash initialized successfully
+2025-12-09 15:14:28,009 - __main__ - WARNING - ⚠️ Gemini test failed but model initialized: 403 Your API key was reported as leaked. Please use another API key.
+2025-12-09 15:14:28,009 - __main__ - INFO - ✅ Model will still work for actual interview content
+2025-12-09 15:15:57,149 - __main__ - INFO - Loading Whisper model (small)... This may take a while on first run.
+2025-12-09 15:16:00,852 - __main__ - INFO - ✅ Whisper model loaded successfully!
+2025-12-09 15:16:00,852 - __main__ - INFO - ✅ Gemini 2.5 Flash initialized successfully
+2025-12-09 15:16:01,071 - __main__ - WARNING - ⚠️ Gemini test failed but model initialized: 403 Your API key was reported as leaked. Please use another API key.
+2025-12-09 15:16:01,071 - __main__ - INFO - ✅ Model will still work for actual interview content
+2025-12-09 15:17:30,743 - __main__ - INFO - Loading Whisper model (small)... This may take a while on first run.
+2025-12-09 15:17:34,356 - __main__ - INFO - ✅ Whisper model loaded successfully!
+2025-12-09 15:17:34,356 - __main__ - INFO - ✅ Gemini 2.5 Flash initialized successfully
+2025-12-09 15:17:35,571 - __main__ - INFO - ✅ Gemini test successful: OK
+2025-12-09 15:19:31,739 - __main__ - INFO - Loading Whisper model (small)... This may take a while on first run.
+2025-12-09 15:19:35,196 - __main__ - INFO - ✅ Whisper model loaded successfully!
+2025-12-09 15:19:35,196 - __main__ - INFO - ✅ Gemini 2.5 Flash initialized successfully
+2025-12-09 15:19:39,243 - __main__ - INFO - ✅ Gemini test successful: OK
+2025-12-09 15:20:23,415 - __main__ - INFO - Loading Whisper model (small)... This may take a while on first run.
+2025-12-09 15:20:26,676 - __main__ - INFO - ✅ Whisper model loaded successfully!
+2025-12-09 15:20:26,676 - __main__ - INFO - ✅ Gemini 2.5 Flash initialized successfully
+2025-12-09 15:20:27,948 - __main__ - INFO - ✅ Gemini test successful: OK
+2025-12-09 15:23:11,297 - __main__ - INFO - Loading Whisper model (small)... This may take a while on first run.
+2025-12-09 15:23:15,981 - __main__ - INFO - ✅ Whisper model loaded successfully!
+2025-12-09 15:23:15,982 - __main__ - INFO - ✅ Gemini 2.5 Flash initialized successfully
+2025-12-09 15:23:17,397 - __main__ - INFO - ✅ Gemini test successful: OK
+2025-12-09 15:24:18,282 - __main__ - INFO - Upload request - Folder: 09_12_2025_15_23_hồng_anh, Question: 1
+2025-12-09 15:24:19,720 - __main__ - INFO - ✅ Converted to MP4: Q1.mp4
+2025-12-09 15:24:19,733 - __main__ - INFO - 🎤 [Background] Starting analysis for Q1...
+2025-12-09 15:24:19,779 - __main__ - INFO - 🎤 Transcribing Q1...
+2025-12-09 15:24:23,291 - __main__ - INFO - 📄 Transcript saved: Q1_transcript.txt
+2025-12-09 15:24:23,292 - __main__ - INFO - 📊 Running Layer 1 analysis for Q1...
+2025-12-09 15:24:23,292 - __main__ - INFO - ✅ Layer 1 completed - Flagged: True
+2025-12-09 15:24:23,293 - __main__ - INFO - 🤖 Running Layer 2 AI analysis for Q1...
+2025-12-09 15:24:23,294 - __main__ - INFO - 🤖 Calling Gemini for Layer 2 analysis...
+2025-12-09 15:24:26,622 - __main__ - INFO - 📥 Raw Gemini response (first 200 chars): {
+  "priority": "LOW",
+  "reason": "The candidate provided no response to the introductory question, making it impossible to evaluate their communication skills or background. This indicates a critica
+2025-12-09 15:24:26,622 - __main__ - INFO - ✅ AI Analysis completed - Priority: LOW
+2025-12-09 15:24:26,622 - __main__ - INFO - ✅ Layer 2 completed - Priority: LOW
+2025-12-09 15:24:26,622 - __main__ - INFO - ✅ [Background] Full analysis completed for Q1
