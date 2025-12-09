@@ -47,3 +47,51 @@
 2025-12-09 15:24:26,622 - __main__ - INFO - ✅ AI Analysis completed - Priority: LOW
 2025-12-09 15:24:26,622 - __main__ - INFO - ✅ Layer 2 completed - Priority: LOW
 2025-12-09 15:24:26,622 - __main__ - INFO - ✅ [Background] Full analysis completed for Q1
+2025-12-09 16:08:42,211 - __main__ - INFO - Loading Whisper model (small)... This may take a while on first run.
+2025-12-09 16:08:44,767 - __main__ - INFO - ✅ Whisper model loaded successfully!
+2025-12-09 16:08:44,768 - __main__ - INFO - ✅ Gemini 2.5 Flash initialized successfully
+2025-12-09 16:08:45,947 - __main__ - INFO - ✅ Gemini test successful: OK
+2025-12-09 16:09:58,383 - __main__ - INFO - Loading Whisper model (small)... This may take a while on first run.
+2025-12-09 16:10:00,883 - __main__ - INFO - ✅ Whisper model loaded successfully!
+2025-12-09 16:10:00,884 - __main__ - INFO - ✅ Gemini 2.5 Flash initialized successfully
+2025-12-09 16:10:02,317 - __main__ - INFO - ✅ Gemini test successful: OK
+2025-12-09 16:36:13,914 - __main__ - INFO - Loading Whisper model (small)... This may take a while on first run.
+2025-12-09 16:36:16,255 - __main__ - INFO - ✅ Whisper model loaded successfully!
+2025-12-09 16:36:16,257 - __main__ - INFO - ✅ Gemini 2.5 Flash initialized successfully
+2025-12-09 16:36:17,368 - __main__ - INFO - ✅ Gemini test successful: OK
+2025-12-09 16:37:54,275 - __main__ - INFO - Loading Whisper model (small)... This may take a while on first run.
+2025-12-09 16:37:56,568 - __main__ - INFO - ✅ Whisper model loaded successfully!
+2025-12-09 16:37:56,569 - __main__ - INFO - ✅ Gemini 2.5 Flash initialized successfully
+2025-12-09 16:37:58,196 - __main__ - INFO - ✅ Gemini test successful: OK
+2025-12-09 16:48:23,407 - __main__ - INFO - Loading Whisper model (small)... This may take a while on first run.
+2025-12-09 16:48:25,849 - __main__ - INFO - ✅ Whisper model loaded successfully!
+2025-12-09 16:48:25,850 - __main__ - INFO - ✅ Gemini 2.5 Flash initialized successfully
+2025-12-09 16:48:27,140 - __main__ - INFO - ✅ Gemini test successful: OK
+2025-12-09 16:51:08,935 - __main__ - INFO - Upload request - Folder: 09_12_2025_16_50_đâs, Question: 1
+2025-12-09 16:51:23,306 - __main__ - INFO - ✅ Converted to MP4: Q1.mp4
+2025-12-09 16:51:23,325 - __main__ - INFO - 🎤 [Background] Starting analysis for Q1...
+2025-12-09 16:51:23,427 - __main__ - INFO - 🎤 Transcribing Q1...
+2025-12-09 16:51:32,868 - __main__ - INFO - 📄 Transcript saved: Q1_transcript.txt
+2025-12-09 16:51:32,868 - __main__ - INFO - 📊 Running Layer 1 analysis for Q1...
+2025-12-09 16:51:32,869 - __main__ - INFO - ✅ Layer 1 completed - Flagged: True
+2025-12-09 16:51:32,869 - __main__ - INFO - 🤖 Running Layer 2 AI analysis for Q1...
+2025-12-09 16:51:32,869 - __main__ - INFO - 🤖 Calling Gemini for Layer 2 analysis...
+2025-12-09 16:51:39,167 - __main__ - INFO - 📥 Raw Gemini response (first 200 chars): {
+  "priority": "LOW",
+  "reason": "The candidate's response was entirely irrelevant to the introductory question, appearing to be an internal monologue or unrelated conversation rather than an introd
+2025-12-09 16:51:39,167 - __main__ - INFO - ✅ AI Analysis completed - Priority: LOW
+2025-12-09 16:51:39,168 - __main__ - INFO - ✅ Layer 2 completed - Priority: LOW
+2025-12-09 16:51:39,170 - __main__ - INFO - ✅ [Background] Full analysis completed for Q1
+2025-12-09 19:58:23,165 - __main__ - INFO - Loading Whisper model (small)... This may take a while on first run.
+2025-12-09 19:58:26,300 - __main__ - INFO - ✅ Whisper model loaded successfully!
+2025-12-09 19:58:26,301 - __main__ - INFO - ✅ Gemini 2.5 Flash initialized successfully
+2025-12-09 19:58:26,535 - __main__ - WARNING - ⚠️ Gemini test failed but model initialized: 403 Your API key was reported as leaked. Please use another API key.
+2025-12-09 19:58:26,536 - __main__ - INFO - ✅ Model will still work for actual interview content
+2025-12-09 19:59:59,771 - __main__ - INFO - Loading Whisper model (small)... This may take a while on first run.
+2025-12-09 20:00:02,662 - __main__ - INFO - ✅ Whisper model loaded successfully!
+2025-12-09 20:00:02,663 - __main__ - INFO - ✅ Gemini 2.5 Flash initialized successfully
+2025-12-09 20:00:03,907 - __main__ - INFO - ✅ Gemini test successful: OK
+2025-12-09 21:56:23,111 - __main__ - INFO - Loading Whisper model (small)... This may take a while on first run.
+2025-12-09 21:56:25,976 - __main__ - INFO - ✅ Whisper model loaded successfully!
+2025-12-09 21:56:25,978 - __main__ - INFO - ✅ Gemini 2.5 Flash initialized successfully
+2025-12-09 21:56:29,082 - __main__ - INFO - ✅ Gemini test successful: OK
