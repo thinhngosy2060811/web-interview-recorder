@@ -1,0 +1,31 @@
+{
+  "userName": "dsadaf",
+  "sessionStartTime": "2025-12-09T17:28:32.859804+07:00",
+  "timeZone": "Asia/Bangkok",
+  "interviewQuestions": [
+    {
+      "index": 1,
+      "text": "Please introduce yourself and briefly describe your background."
+    },
+    {
+      "index": 2,
+      "text": "Why are you interested in working as a Data Analyst?"
+    },
+    {
+      "index": 3,
+      "text": "Describe the steps you usually take to clean a messy dataset."
+    },
+    {
+      "index": 4,
+      "text": "How do you determine which metrics or KPIs matter for a business problem?"
+    },
+    {
+      "index": 5,
+      "text": "How would you explain p-value to someone without a statistics background?"
+    }
+  ],
+  "questions": [],
+  "questionsCount": 0,
+  "sessionEnded": false,
+  "sessionEndTime": null
+}

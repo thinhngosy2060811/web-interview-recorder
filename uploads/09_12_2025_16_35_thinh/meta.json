@@ -1,0 +1,31 @@
+{
+  "userName": "thinh",
+  "sessionStartTime": "2025-12-09T16:35:08.480721+07:00",
+  "timeZone": "Asia/Bangkok",
+  "interviewQuestions": [
+    {
+      "index": 1,
+      "text": "Please introduce yourself and briefly describe your background."
+    },
+    {
+      "index": 2,
+      "text": "Why are you interested in working as a Data Analyst?"
+    },
+    {
+      "index": 3,
+      "text": "What techniques do you use to detect outliers?"
+    },
+    {
+      "index": 4,
+      "text": "Explain the difference between correlation and causation."
+    },
+    {
+      "index": 5,
+      "text": "How do you decide which chart type is appropriate for the data?"
+    }
+  ],
+  "questions": [],
+  "questionsCount": 0,
+  "sessionEnded": false,
+  "sessionEndTime": null
+}

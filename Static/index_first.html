@@ -256,7 +256,6 @@
             background: #f0f0f0;
             border-radius: 20px;
         }
-        
         @media (max-width: 768px) {
             #app {
                 padding: 20px;
@@ -336,6 +335,7 @@
             <div class="video-container">
                 <video id="preview" width="640" height="480" autoplay muted></video>
                 <canvas id="output_canvas" width="640" height="480"></canvas>
+                <!--Thinh beo ui ich(audio visualize)-->
                 <!--Đồng hồ-->
                 <div id="timer-display" class="timer-overlay">03:00</div>
             </div>
@@ -364,7 +364,6 @@
                 <button id="btn-next" onclick="nextQuestion()" disabled>Next Question</button>
                 <button id="btn-finish" onclick="finishInterview()" style="display: none;">Finish Interview</button>
             </div>
-
         <div id="step-complete" style="display: none;">
             <h1>Completed!</h1>
             <h2>Thank you for completing the interview</h2>
@@ -398,6 +397,9 @@
         let retryCountForCurrentQuestion = 0;
         const MAX_RETRIES_PER_QUESTION = 1;
         let violationStartTime = null;
+        let countdownInterval;
+        let currentUtterance = null;
+        let prepInterval;
         const VIOLATION_THRESHOLD_MS = 5000;
 
         async function initAI() {
@@ -689,7 +691,7 @@
                     video: true,
                     audio: true
                 });
-
+                // Thinh beo uc ich (audio visualize)
                 document.getElementById('preview').srcObject = stream;
                 statusEl.textContent = 'Permissions granted!';
                 statusEl.className = 'status-text status-success';
@@ -709,7 +711,28 @@
                 alert('Cannot access camera/microphone. Please check browser permissions.');
             }
         }
+        function startAutoCountdown() {
+            const btnStart = document.getElementById('btn-start-record');
+            const statusEl = document.getElementById('recording-status');
+    
+            let prepTime = 15;
+            statusEl.textContent = 'Preparing...';
+            btnStart.textContent = `Start (${prepTime}s)`;
 
+            // Đảm bảo không có interval nào đang chạy chồng chéo
+            if (countdownInterval) clearInterval(countdownInterval);
+
+            countdownInterval = setInterval(() => {
+                prepTime--;
+                btnStart.textContent = `Start (${prepTime}s)`;
+
+                if (prepTime <= 0) {
+                    // Hết giờ chuẩn bị -> Tự động quay
+                    clearInterval(countdownInterval);
+                    startRealRecording();
+                }
+            }, 1000);
+        }
         function loadQuestion(index) {
             currentQuestionIndex = index;
             retriesUsed = 0;
@@ -722,18 +745,38 @@
             // Reset đồng hồ
             document.getElementById('timer-display').textContent = "03:00";
             document.getElementById('timer-display').style.color = "#333";
+            const btnStart = document.getElementById('btn-start-record');
+
+            btnStart.disabled = false; 
+            btnStart.textContent = "Start";
             // Reset nút bấm
-            document.getElementById('btn-start-record').disabled = false;
             document.getElementById('btn-stop-record').disabled = true;
             document.getElementById('btn-next').disabled = true;
-            document.getElementById('btn-retry').style.display = 'none';
             
             if (index >= QUESTIONS.length - 1) {
                 document.getElementById('btn-finish').style.display = 'inline-block';
             }
-        }
+            speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(QUESTIONS[index]);
+            utterance.lang = 'en-US'; // Hoặc 'en-US' nếu câu hỏi tiếng Anh
+            utterance.rate = 0.9;
+            
+            currentUtterance = utterance;
 
-        function startRecording() {
+            utterance.onend = () => {
+                startAutoCountdown();
+            };
+    
+            speechSynthesis.speak(utterance);
+        }
+        function startRealRecording() {
+            const btnStart = document.getElementById('btn-start-record');
+            btnStart.textContent = 'Recording...'; 
+            btnStart.disabled = true;
+
+            document.getElementById('btn-stop-record').disabled = false; // Mở nút Stop
+            document.getElementById('recording-status').textContent = 'Recording...';
+
             recordedChunks = [];
             violationStartTime = null;
             
@@ -785,12 +828,26 @@
                     stopRecording();
                 }
             }, 1000);
-            
-            document.getElementById('recording-status').textContent = 'Recording...';
-            document.getElementById('btn-start-record').disabled = true;
-            document.getElementById('btn-stop-record').disabled = false;
         }
+        function startRecording() {
+            if (currentUtterance) {
+                currentUtterance.onend = null; // Hủy sự kiện để nó không tự gọi đếm ngược nữa
+            }
+            speechSynthesis.cancel(); 
 
+            // 2. Dừng đếm ngược nếu đang chạy (biến countdownInterval từ hàm startAutoCountdown)
+            if (typeof countdownInterval !== 'undefined' && countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+
+            // 3. Dừng bộ đếm cũ (nếu code cũ bạn còn dùng biến này)
+            if (typeof prepInterval !== 'undefined' && prepInterval) {
+                clearInterval(prepInterval);
+            }
+
+            // 4. Vào quay chính thức ngay lập tức
+            startRealRecording();
+        }
         function stopRecording() {
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 mediaRecorder.stop();
@@ -805,9 +862,6 @@
 
                 // Hiện nút retry
                 // Nếu chua dùng luot entry nào thì hiện nút
-                if (retriesUsed < 1) {
-                    document.getElementById('btn-retry').style.display = 'inline-block';
-                }    
             }
         }
         function showVideoReview() {
@@ -898,7 +952,10 @@
             document.getElementById('timer-display').style.color = "#333";
             document.getElementById('ai-warning').textContent = ""; // ✅ THÊM: Xóa cảnh báo AI
             
-            document.getElementById('btn-start-record').disabled = false;
+            const btnStart = document.getElementById('btn-start-record');
+            btnStart.disabled = false; 
+            btnStart.textContent = "Start Recording";
+            
             document.getElementById('btn-stop-record').disabled = true;
             document.getElementById('btn-next').disabled = true;
         }
@@ -968,17 +1025,9 @@
                 } else {
                     statusEl.textContent = `Error: ${error.message}. Please try again manually.`;
                     statusEl.className = 'status-text status-error';
-                    document.getElementById('btn-retry').style.display = 'inline-block';
                 }
             }
         }
-        
-        function retryUpload() {
-            document.getElementById('btn-retry').style.display = 'none';
-            uploadRetryCount = 0;
-            uploadVideo(false);
-        }
-
         async function nextQuestion() {
             if (pendingVideoBlob) {
                 // Vô hiệu hóa nút để tránh spam
@@ -1160,6 +1209,7 @@
             // (Tùy chọn) Load lại danh sách mới nhất để cập nhật trạng thái
             loadDashboard();
         }
+        // Thinh beo uc ich (copy)
     </script>
 </body>
 </html>
