@@ -105,16 +105,16 @@
             overflow: hidden;
         }
         .timer-overlay{
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: rgba(0, 0, 0, 0.6);
+            position: absolute;  /* Ghim đè lên video */
+            top: 15px;           /* Cách mép trên 15px */
+            right: 15px;         /* Cách mép phải 15px */
+            background: rgba(0, 0, 0, 0.6); /* Nền đen mờ cho dễ đọc */
             color: white;
             padding: 5px 15px;
             border-radius: 20px;
             font-size: 1.5em;
             font-weight: bold;
-            z-index: 10;
+            z-index: 10;         /* Nổi lên trên cùng */
             border: 1px solid rgba(255,255,255,0.3);
         }
         #preview {
@@ -151,7 +151,21 @@
         #ai-warning:empty {
             display: none;
         }
-        
+        #review-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 2px solid #667eea;
+        }
+
+        #review-player {
+            display: block;
+            margin: 10px auto;
+            border-radius: 8px;
+            max-width: 100%;
+            background: #000;
+        }
         .status-text {
             padding: 10px;
             border-radius: 8px;
@@ -195,7 +209,13 @@
             margin: 20px 0;
             border-left: 4px solid #667eea;
         }
-        
+        .dashboard-table a {
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .dashboard-table a:hover {
+            text-decoration: underline;
+        }
         .button-group {
             display: flex;
             flex-wrap: wrap;
@@ -209,7 +229,7 @@
             background: #ffffff;
             border: 1px solid #ddd;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            display: none;
+            display: none; /* Mặc định ẩn */
         }
         .decision-text {
             font-size: 28px;
@@ -217,7 +237,7 @@
             text-align: center;
             margin: 10px 0;
             text-transform: uppercase;
-            letter-spacing: 1px;
+        letter-spacing: 1px;
         }
         .score-row {
             display: flex;
@@ -237,32 +257,12 @@
             border-radius: 20px;
         }
         
-        #review-section {
-            margin: 20px 0;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border: 2px solid #667eea;
-        }
-        
-        #review-player {
-            display: block;
-            margin: 10px auto;
-            border-radius: 8px;
-            max-width: 100%;
-        }
-        
         @media (max-width: 768px) {
             #app {
                 padding: 20px;
             }
             
-            .video-container {
-                width: 100%;
-                height: auto;
-            }
-            
-            #preview, #output_canvas, #review-player {
+            #preview, #output_canvas {
                 width: 100%;
                 height: auto;
             }
@@ -271,76 +271,110 @@
                 font-size: 1.8em;
             }
         }
+        .dashboard-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .dashboard-table th, .dashboard-table td { padding: 12px; border: 1px solid #ddd; text-align: left; }
+        .dashboard-table th { background: #f8f9fa; color: #333; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8em; color: white; }
+        .bg-green { background: #28a745; }
+        .bg-red { background: #dc3545; }
+        .bg-orange { background: #ffc107; color: #333; }
     </style>
 </head>
 <body>
     <div id="app">
         <div id="step-token" style="display: block;">
             <h1>Web Interview Recorder</h1>
-            <h2>Buoc 1: Xac thuc</h2>
-            <label>Token: <input type="text" id="token" value="demo123" placeholder="Nhap token cua ban"></label>
-            <label>Ho ten: <input type="text" id="userName" placeholder="Nguyen Van A"></label>
-            <button onclick="verifyAndStart()">Bat dau phong van</button>
+            <h2>Step 1: Authentication</h2>
+            <label>Token: <input type="text" id="token"placeholder="Enter your token" autocomplete="off"></label>
+            <label>Ho ten: <input type="text" id="userName" placeholder="Enter your name" autocomplete="off"></label>
+            <button onclick="verifyAndStart()">Start Interview</button>
             <p id="token-status" class="status-text"></p>
         </div>
 
         <div id="step-permission" style="display: none;">
             <h1>Web Interview Recorder</h1>
-            <h2>Buoc 2: Cap quyen</h2>
-            <p>Vui long cap quyen truy cap camera va microphone de tiep tuc.</p>
-            <button onclick="requestPermissions()">Cap quyen Camera & Microphone</button>
+            <h2>Step 2: Permissions</h2>
+            <p>Please grant access to your camera and microphone to continue.</p>
+            <button onclick="requestPermissions()">Enable Camera & Microphone</button>
             <p id="permission-status" class="status-text"></p>
         </div>
 
+        <div id="step-dashboard" class="step-box" style="display: none;">
+            <h1>Candidate Dashboard</h1>
+            <div style="text-align: right; margin-bottom: 10px;">
+                <button onclick="location.reload()" style="background: #6c757d;">Logout</button>
+            </div>
+        
+            <table class="dashboard-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Date/Time</th>
+                        <th>Priority</th>
+                        <th>Note</th>
+                        <th>Videos</th>
+                    </tr>
+                </thead>
+                <tbody id="candidate-list">
+                    <!-- Dữ liệu sẽ đổ vào đây -->
+                </tbody>
+            </table>
+        </div>
+        <div id="step-admin-review" style="display: none;">
+            <div style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <button onclick="backToDashboard()" style="background: #6c757d; padding: 8px 15px;">⬅ Back to Dashboard</button>
+                <span style="float: right; font-weight: bold; color: #555; margin-top: 5px;" id="review-candidate-name"></span>
+            </div>
+    
+            <div id="review-videos-container"></div>
+        </div>
         <div id="step-interview" style="display: none;">
             <h1>Web Interview Recorder</h1>
-            <h2>Dang phong van</h2>
-            <p>Thu muc luu: <strong id="folder-name"></strong></p>
+            <h2>Interview Session</h2>
+            <p>Save folder: <strong id="folder-name"></strong></p>
             
             <div class="video-container">
                 <video id="preview" width="640" height="480" autoplay muted></video>
                 <canvas id="output_canvas" width="640" height="480"></canvas>
+                <!--Đồng hồ-->
                 <div id="timer-display" class="timer-overlay">03:00</div>
             </div>
             
             <div id="ai-warning"></div>
-            
-            <!-- PHẦN XEM LẠI VIDEO -->
+
             <div id="review-section" style="display: none;">
-                <h3 style="color: #667eea;">📹 Xem lại video của bạn</h3>
+                <h3>🔹 Review your video</h3>
                 <video id="review-player" width="640" height="480" controls></video>
-                
                 <div style="text-align: center; margin-top: 15px;">
-                    <button onclick="confirmVideo()" style="background: #28a745;">✅ Đồng ý - Upload video này</button>
-                    <button onclick="cancelReview()" style="background: #dc3545;">❌ Hủy - Thu lại(1 lần duy nhất)</button>
+                    <button onclick="confirmVideo()">✅ Confirm & Upload</button>
+                    <button onclick="cancelReview()">❌ Cancel & Retry</button>
                 </div>
             </div>
-            
             <div class="question-box">
-                <h3>Cau hoi <span id="current-question-num">1</span>/5</h3>
+                <h3>Question <span id="current-question-num">1</span>/5</h3>
                 <p id="current-question-text" style="font-size: 1.1em; color: #333;"></p>
             </div>
             
-            <p>Trang thai: <strong id="recording-status">San sang</strong></p>
+            <p>Status: <strong id="recording-status">Ready</strong></p>
             <p id="upload-status" class="status-text"></p>
             
             <div class="button-group">
-                <button id="btn-start-record" onclick="startRecording()">Bắt đầu ghi</button>
-                <button id="btn-stop-record" onclick="stopRecording()" disabled>Dừng ghi</button>
-                <button id="btn-next" onclick="nextQuestion()" disabled>Câu tiếp theo</button>
-                <button id="btn-finish" onclick="finishInterview()" style="display: none;">Hoàn thành</button>
+                <button id="btn-start-record" onclick="startRecording()">Start Recording</button>
+                <button id="btn-stop-record" onclick="stopRecording()" disabled>Stop Recording</button>
+                <button id="btn-next" onclick="nextQuestion()" disabled>Next Question</button>
+                <button id="btn-finish" onclick="finishInterview()" style="display: none;">Finish Interview</button>
             </div>
-        </div>
 
         <div id="step-complete" style="display: none;">
-            <h1>Hoan thanh!</h1>
-            <h2>Cam on ban da hoan thanh phong van</h2>
+            <h1>Completed!</h1>
+            <h2>Thank you for completing the interview</h2>
             <div style="background: #e8f5e9; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <p>Thu muc luu: <strong id="final-folder-name"></strong></p>
-                <p>So cau hoi da tra loi: <strong id="total-questions"></strong></p>
+                <p>Saved folder: <strong id="final-folder-name"></strong></p>
+                <p>Questions answered: <strong id="total-questions"></strong></p>
             </div>
-            <p>Cac video cua ban da duoc luu thanh cong. Chung toi se lien he voi ban som!</p>
+            <p>Your videos have been saved successfully. We will contact you soon!</p>
         </div>
+
     </div>
 
     <script> 
@@ -353,19 +387,18 @@
             noFaceFrames: 0,
             warnings: []
         };
-        
-        const TIME_LIMIT_SEC = 180; // 3 phút
-        let QUESTIONS = []; // Sẽ lấy từ Server
+        // Thêm đồng hồ đếm nguoc 
+        const TIME_LIMIT_SEC = 180; // 3 phút (Yêu cầu mới)
+        let QUESTIONS = []; // Để rỗng, sẽ lấy từ Server
         let timerInterval;
+
+        let retriesUsed = 0; // Đếm số lần thu lại
         let isAiRunning = false;
+        let pendingVideoBlob = null;
+        let retryCountForCurrentQuestion = 0;
+        const MAX_RETRIES_PER_QUESTION = 1;
         let violationStartTime = null;
         const VIOLATION_THRESHOLD_MS = 5000;
-
-        // Biến toàn cục mới cho logic upload
-        let pendingVideoBlob = null; // Lưu video tạm thời
-
-        let retryCountForCurrentQuestion = 0; // Đếm số lần retry cho câu hiện tại
-        const MAX_RETRIES_PER_QUESTION = 1;   // Giới hạn 1 lần retry/câu
 
         async function initAI() {
             const videoElement = document.getElementById('preview');
@@ -406,7 +439,7 @@
                 if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
                     if (results.multiFaceLandmarks.length > 1) {
                         isViolation = true;
-                        currentViolationType = "PHAT HIEN NGUOI LA!";
+                        currentViolationType = "MULTIPLE FACES DETECTED!";
                         aiAnalysis.multipleFacesFrames++;
                         aiAnalysis.lookingAwayFrames++;
                         warningMsg = currentViolationType;
@@ -449,14 +482,14 @@
 
                         if (yawRatio < 0.3 || yawRatio > 3.0) {
                             isViolation = true;
-                            currentViolationType = "NHIN THANG DI BAN OI!";
+                            currentViolationType = "PLEASE LOOK STRAIGHT!";
                         }
                         else if (pitchRatio < 0.6) {
                             isViolation = true;
-                            currentViolationType = "CUP PHA XUONG BAN OI!";
+                            currentViolationType = "HEAD TOO LOW!";
                         } else if (pitchRatio > 1.6) {
                             isViolation = true;
-                            currentViolationType = "NGANG MAT LEN BAN OI!";
+                            currentViolationType = "HEAD TOO HIGH!";
                         }
                         else {
                             const isGlancingH = (gazeH_Right < 0.25 || gazeH_Right > 0.75) && 
@@ -467,16 +500,16 @@
 
                             if (isGlancingH) {
                                 isViolation = true;
-                                currentViolationType = "NHIN THANG DI BAN OI!";
+                                currentViolationType = "PLEASE LOOK AT CAMERA!";
                             } else if (isGlancingV) {
                                 isViolation = true;
-                                currentViolationType = "NHIN THANG DI BAN OI!";
+                                currentViolationType = "PLEASE LOOK AT CAMERA!";
                             }
                         }
                     }
                 } else {
                     isViolation = true;
-                    currentViolationType = "DI DAU VAY BAN OI";
+                    currentViolationType = "FACE NOT DETECTED!";
                     aiAnalysis.noFaceFrames++;
                     aiAnalysis.lookingAwayFrames++;
                     warningMsg = currentViolationType;
@@ -553,61 +586,102 @@
             token = document.getElementById('token').value.trim();
             userName = document.getElementById('userName').value.trim();
             
-            if (!token || !userName) {
-                alert('Vui long nhap token va ho ten');
+            if (!token) {
+                alert('Vui long nhap token');
                 return;
             }
 
             const statusEl = document.getElementById('token-status');
             statusEl.textContent = 'Dang xac thuc...';
-            statusEl.className = 'status-text status-info';
 
             try {
-                const verifyRes = await fetch(`${API_BASE}/api/verify-token`, {
+                const vRes = await fetch(`${API_BASE}/api/verify-token`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token })
                 });
 
-                if (!verifyRes.ok) {
-                    const error = await verifyRes.json();
-                    throw new Error(error.detail || 'Token khong hop le');
+                if (!vRes.ok) throw new Error('Token khong hop le');
+                const authData = await vRes.json();
+
+                // ---TH1: Là Admin---
+                if (authData.role === 'evaluator') {
+                    statusEl.textContent = 'Welcome Admin';
+                    // Chuyển thẳng sang Dashboard, KHÔNG CẦN check tên
+                    loadDashboard(); 
+                    return;
                 }
 
-                const startRes = await fetch(`${API_BASE}/api/session/start`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                //---TH2: Là ứng viên ---
+                if (!userName) { 
+                    alert('Please enter Full Name!'); 
+                    statusEl.textContent = '';
+                    return;
+                }
+
+                const sRes = await fetch(`${API_BASE}/api/session/start`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ token, userName })
                 });
-
-                if (!startRes.ok) {
-                    const error = await startRes.json();
-                    throw new Error(error.detail || 'Khong the tao phien lam viec');
-                }
-
-                const data = await startRes.json();
+            
+                if (!sRes.ok) throw new Error('Session creation failed');
+                const data = await sRes.json();
+            
+                // Vào màn hình phỏng vấn
                 folder = data.folder;
-                
-                // Lấy danh sách câu hỏi từ server (format mới: array of objects)
                 QUESTIONS = data.questions;
-
-                statusEl.textContent = 'Xac thuc thanh cong!';
-                statusEl.className = 'status-text status-success';
-                
-                setTimeout(() => {
-                    document.getElementById('step-token').style.display = 'none';
-                    document.getElementById('step-permission').style.display = 'block';
-                }, 1000);
+            
+                document.getElementById('step-token').style.display = 'none';
+                document.getElementById('step-permission').style.display = 'block';
 
             } catch (error) {
-                statusEl.textContent = 'Loi: ' + error.message;
+                statusEl.textContent = 'Error: ' + error.message;
                 statusEl.className = 'status-text status-error';
             }
         }
 
+        async function loadDashboard() {
+            // Ẩn màn hình login, hiện dashboard
+            document.getElementById('step-token').style.display = 'none';
+            document.getElementById('step-dashboard').style.display = 'block';
+        
+            const tbody = document.getElementById('candidate-list');
+            tbody.innerHTML = '<tr><td colspan="5">Đang tải dữ liệu...</td></tr>';
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/candidates?token=${token}`);
+                const data = await res.json();
+            
+                tbody.innerHTML = ''; // Xóa loading
+            
+                data.candidates.forEach(c => {
+                    let priorityColor = 'green';
+                    if (c.priority === 2) priorityColor = 'orange';
+                    if (c.priority === 3) priorityColor = 'red';
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><strong>${c.name}</strong></td>
+                            <td>${c.time}</td>
+                            <td style="color:${priorityColor}; font-weight:bold;">
+                                ${c.priority === 1 ? '⭐ High' : c.priority === 2 ? '⚠️ Medium' : '❌ Low'}
+                            </td>
+                            <td>${c.note}</td>
+                            <td>
+                                <button onclick="viewCandidate('${c.folder}')" style="padding: 5px 10px; font-size: 14px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                    📁 Videos
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="5">Error loading data</td></tr>';
+            }
+        }
         async function requestPermissions() {
             const statusEl = document.getElementById('permission-status');
-            statusEl.textContent = 'Dang xin quyen...';
+            statusEl.textContent = 'Requesting permissions...';
             statusEl.className = 'status-text status-info';
 
             try {
@@ -617,7 +691,7 @@
                 });
 
                 document.getElementById('preview').srcObject = stream;
-                statusEl.textContent = 'Da cap quyen!';
+                statusEl.textContent = 'Permissions granted!';
                 statusEl.className = 'status-text status-success';
 
                 await initAI();
@@ -630,33 +704,29 @@
                 }, 1500);
 
             } catch (error) {
-                statusEl.textContent = 'Loi: ' + error.message;
+                statusEl.textContent = 'Error: ' + error.message;
                 statusEl.className = 'status-text status-error';
-                alert('Khong the truy cap camera/microphone. Vui long kiem tra quyen trinh duyet.');
+                alert('Cannot access camera/microphone. Please check browser permissions.');
             }
         }
 
         function loadQuestion(index) {
             currentQuestionIndex = index;
+            retriesUsed = 0;
+            retryCountForCurrentQuestion = 0; // ← RESET đếm retry
+            document.getElementById('review-section').style.display = 'none'; // ← ẨN review
             document.getElementById('current-question-num').textContent = index + 1;
-            // SỬA: Vì QUESTIONS giờ là array of objects
             document.getElementById('current-question-text').textContent = QUESTIONS[index];
-            document.getElementById('recording-status').textContent = 'San sang';
+            document.getElementById('recording-status').textContent = 'Ready';
             document.getElementById('upload-status').textContent = '';
-
-            retryCountForCurrentQuestion = 0;
-            
-            // Ẩn review section
-            document.getElementById('review-section').style.display = 'none';
-            
             // Reset đồng hồ
             document.getElementById('timer-display').textContent = "03:00";
             document.getElementById('timer-display').style.color = "#333";
-            
             // Reset nút bấm
             document.getElementById('btn-start-record').disabled = false;
             document.getElementById('btn-stop-record').disabled = true;
             document.getElementById('btn-next').disabled = true;
+            document.getElementById('btn-retry').style.display = 'none';
             
             if (index >= QUESTIONS.length - 1) {
                 document.getElementById('btn-finish').style.display = 'inline-block';
@@ -666,7 +736,6 @@
         function startRecording() {
             recordedChunks = [];
             violationStartTime = null;
-            pendingVideoBlob = null; // Reset pending video
             
             mediaRecorder = new MediaRecorder(stream, {
                 mimeType: 'video/webm;codecs=vp8,opus'
@@ -678,7 +747,6 @@
                 }
             };
 
-            // THAY ĐỔI CHÍNH: Khi stop -> hiện preview, KHÔNG upload ngay
             mediaRecorder.onstop = () => {
                 showVideoReview();
             };
@@ -694,7 +762,7 @@
             
             mediaRecorder.start();
 
-            // Logic đồng hồ đếm ngược
+            // Logic đồng hồ đếm nguoc
             let timeLeft = TIME_LIMIT_SEC;
             const timerEl = document.getElementById('timer-display');
             
@@ -703,19 +771,22 @@
             timerInterval = setInterval(() => {
                 timeLeft--;
                 
+                // Format phút:giây
                 const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
                 const s = (timeLeft % 60).toString().padStart(2, '0');
                 timerEl.textContent = `${m}:${s}`;
                 
+                // Cảnh báo đỏ khi còn 30s
                 if (timeLeft < 30) timerEl.style.color = "red";
                 else timerEl.style.color = "#333";
 
+                // Hết giờ -> Tự động dừng
                 if (timeLeft <= 0) {
                     stopRecording();
                 }
             }, 1000);
             
-            document.getElementById('recording-status').textContent = 'Dang ghi...';
+            document.getElementById('recording-status').textContent = 'Recording...';
             document.getElementById('btn-start-record').disabled = true;
             document.getElementById('btn-stop-record').disabled = false;
         }
@@ -726,21 +797,25 @@
                 isAiRunning = false;
                 violationStartTime = null;
 
-                // Dừng đồng hồ
+                // Dung đồng hồ
                 if (timerInterval) clearInterval(timerInterval);
 
-                document.getElementById('recording-status').textContent = 'Đã dừng - Đang xử lý...';
+                document.getElementById('recording-status').textContent = 'Stopped';
                 document.getElementById('btn-stop-record').disabled = true;
+
+                // Hiện nút retry
+                // Nếu chua dùng luot entry nào thì hiện nút
+                if (retriesUsed < 1) {
+                    document.getElementById('btn-retry').style.display = 'inline-block';
+                }    
             }
         }
-
-        // HÀM MỚI: Hiển thị video review
         function showVideoReview() {
             pendingVideoBlob = new Blob(recordedChunks, { type: 'video/webm' });
             
             // Kiểm tra kích thước
             if (pendingVideoBlob.size > MAX_FILE_SIZE) {
-                alert(`❌ Video quá lớn (${(pendingVideoBlob.size / 1024 / 1024).toFixed(2)}MB). Tối đa 50MB. Vui lòng thu lại ngắn hơn.`);
+                alert(`❌ Video too large (${(pendingVideoBlob.size / 1024 / 1024).toFixed(2)}MB). Max 50MB.`);
                 resetForRetry();
                 return;
             }
@@ -752,13 +827,13 @@
             
             // Hiển thị phần review
             document.getElementById('review-section').style.display = 'block';
-            document.getElementById('recording-status').textContent = '⏸️ Xem lại video và quyết định';
+            document.getElementById('recording-status').textContent = '⏸️ Review and Decide';
         }
 
         // HÀM MỚI: Xác nhận upload
         function confirmVideo() {
             if (!pendingVideoBlob) {
-                alert('Không tìm thấy video!');
+                alert('No video found!');
                 return;
             }
             
@@ -767,18 +842,18 @@
             
             // Bật nút Next để upload
             document.getElementById('btn-next').disabled = false;
-            document.getElementById('recording-status').textContent = '✅ Video đã sẵn sàng - Ấn "Câu tiếp theo" để upload';
+            document.getElementById('recording-status').textContent = '✅ Video ready - Click "Next Question" to upload';
         }
 
         // HÀM MỚI: Hủy và cho phép thu lại
         function cancelReview() {
             if (retryCountForCurrentQuestion >= MAX_RETRIES_PER_QUESTION) {
-            alert('❌ Bạn đã hết lượt thu lại cho câu này!\n\nVui lòng chọn "✅ Đồng ý" để tiếp tục.');
+            alert('❌ You have used your retry limit for this question!\n\nPlease choose "✅ Accept" to continue.');
             return; // CHẶN không cho retry thêm
             }
     
             // Confirm trước khi retry
-            if (!confirm('⚠️ Bạn chỉ được thu lại 1 LẦN DUY NHẤT cho câu này.\n\nChắc chắn muốn hủy video này và thu lại?')) {
+            if (!confirm('⚠️ You can only retry ONCE for this question.\n\nAre you sure?')) {
                 return; // User không muốn retry
             }
             
@@ -818,7 +893,7 @@
             isAiRunning = false;
             violationStartTime = null;
             
-            document.getElementById('recording-status').textContent = '🔄 Sẵn sàng thu lại';
+            document.getElementById('recording-status').textContent = '🔄 Ready to retry';
             document.getElementById('timer-display').textContent = "03:00";
             document.getElementById('timer-display').style.color = "#333";
             document.getElementById('ai-warning').textContent = ""; // ✅ THÊM: Xóa cảnh báo AI
@@ -827,50 +902,18 @@
             document.getElementById('btn-stop-record').disabled = true;
             document.getElementById('btn-next').disabled = true;
         }
-
-        // SỬA HÀM nextQuestion() - GỌI UPLOAD Ở ĐÂY
-        async function nextQuestion() {
-            // THAY ĐỔI CHÍNH: Upload video trước khi chuyển câu
-            if (pendingVideoBlob) {
-                // Vô hiệu hóa nút để tránh spam
-                document.getElementById('btn-next').disabled = true;
-                document.getElementById('recording-status').textContent = '📤 Đang upload...';
-                
-                // Upload video
-                await uploadVideo();
-                
-                // Sau khi upload xong mới chuyển câu
-                if (uploadRetryCount === 0) { // Upload thành công
-                    pendingVideoBlob = null;
-                    
-                    if (currentQuestionIndex < QUESTIONS.length - 1) {
-                        loadQuestion(currentQuestionIndex + 1);
-                    } else {
-                        alert('Đã hết câu hỏi. Vui lòng nhấn "Hoàn thành"');
-                    }
-                }
-            } else {
-                alert('Chưa có video để upload!');
-            }
-        }
-
-        // SỬA HÀM uploadVideo() - SỬ DỤNG pendingVideoBlob
         async function uploadVideo(isRetry = false) {
             if (!isRetry) {
                 uploadRetryCount = 0;
             }
 
-            if (!pendingVideoBlob) {
-                alert('Không tìm thấy video để upload!');
-                return;
-            }
-
-            const blob = pendingVideoBlob;
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
             
             if (blob.size > MAX_FILE_SIZE) {
                 const statusEl = document.getElementById('upload-status');
-                statusEl.textContent = `Lỗi: File quá lớn (${(blob.size / 1024 / 1024).toFixed(2)}MB). Tối đa 50MB`;
+                statusEl.textContent = `Error: File too large (${(blob.size / 1024 / 1024).toFixed(2)}MB). Max 50MB`;
                 statusEl.className = 'status-text status-error';
+                document.getElementById('btn-retry').style.display = 'inline-block';
                 return;
             }
 
@@ -891,7 +934,7 @@
             formData.append('analysisData', analysisJson);
 
             const statusEl = document.getElementById('upload-status');
-            statusEl.textContent = '📤 Đang upload...';
+            statusEl.textContent = 'Uploading....';
             statusEl.className = 'status-text status-info';
 
             try {
@@ -902,14 +945,15 @@
 
                 if (!response.ok) {
                     const error = await response.json();
-                    throw new Error(error.detail || 'Upload thất bại');
+                    throw new Error(error.detail || 'Upload failed');
                 }
 
                 const data = await response.json();
                 
-                statusEl.textContent = `✅ Upload thành công: ${data.savedAs} (${(blob.size / 1024 / 1024).toFixed(2)}MB) - Điểm tập trung: ${focusScore}%`;
+                statusEl.textContent = `Upload successful: ${data.savedAs} (${(blob.size / 1024 / 1024).toFixed(2)}MB) - Focus score: ${focusScore}%`;
                 statusEl.className = 'status-text status-success';
                
+                document.getElementById('btn-next').disabled = false;
                 uploadRetryCount = 0;
 
             } catch (error) {
@@ -917,20 +961,50 @@
                 
                 if (uploadRetryCount < MAX_RETRIES) {
                     const delay = Math.min(1000 * Math.pow(2, uploadRetryCount), 10000);
-                    statusEl.textContent = `⚠️ Upload thất bại. Thử lại sau ${delay/1000}s... (Lần ${uploadRetryCount}/${MAX_RETRIES})`;
+                    statusEl.textContent = `Upload failed. Retry later ${delay/1000}s... (times ${uploadRetryCount}/${MAX_RETRIES})`;
                     statusEl.className = 'status-text status-warning';
                     
                     setTimeout(() => uploadVideo(true), delay);
                 } else {
-                    statusEl.textContent = `❌ Lỗi: ${error.message}. Vui lòng thử lại.`;
+                    statusEl.textContent = `Error: ${error.message}. Please try again manually.`;
                     statusEl.className = 'status-text status-error';
-                    document.getElementById('btn-next').disabled = false; // Cho phép retry
+                    document.getElementById('btn-retry').style.display = 'inline-block';
                 }
+            }
+        }
+        
+        function retryUpload() {
+            document.getElementById('btn-retry').style.display = 'none';
+            uploadRetryCount = 0;
+            uploadVideo(false);
+        }
+
+        async function nextQuestion() {
+            if (pendingVideoBlob) {
+                // Vô hiệu hóa nút để tránh spam
+                document.getElementById('btn-next').disabled = true;
+                document.getElementById('recording-status').textContent = '📤 Uploading...';
+                
+                // Upload video
+                await uploadVideo();
+                
+                // Sau khi upload xong mới chuyển câu
+                if (uploadRetryCount === 0) { // Upload thành công
+                    pendingVideoBlob = null;
+                    
+                    if (currentQuestionIndex < QUESTIONS.length - 1) {
+                        loadQuestion(currentQuestionIndex + 1);
+                    } else {
+                        alert('All questions answered. Please click "Finish Interview"');
+                    }
+                }
+            } else {
+                alert('No video to upload!');
             }
         }
 
         async function finishInterview() {
-            if (!confirm('Ban co chac muon hoan thanh phong van?')) {
+            if (!confirm('Are you sure you want to finish the interview?')) {
                 return;
             }
 
@@ -947,7 +1021,7 @@
 
                 if (!response.ok) {
                     const error = await response.json();
-                    throw new Error(error.detail || 'Khong the ket thuc phien');
+                    throw new Error(error.detail || 'Failed to finish session');
                 }
 
                 if (stream) {
@@ -960,16 +1034,132 @@
                 document.getElementById('total-questions').textContent = currentQuestionIndex + 1;
 
             } catch (error) {
-                alert('Loi khi hoan thanh: ' + error.message);
+                alert('Error: ' + error.message);
             }
         }
 
         window.addEventListener('beforeunload', (e) => {
             if (stream && document.getElementById('step-interview').style.display === 'block') {
                 e.preventDefault();
-                e.returnValue = 'Ban co chac muon roi di? Du lieu co the bi mat.';
+                e.returnValue = 'Are you sure? Data might be lost.';
             }
         });
+        async function viewCandidate(folderName) {
+            const dashboard = document.getElementById('step-dashboard');
+            const reviewPage = document.getElementById('step-admin-review');
+            const container = document.getElementById('review-videos-container');
+            const nameLabel = document.getElementById('review-candidate-name');
+
+            // Chuyển màn hình & hiện loading
+            dashboard.style.display = 'none';
+            reviewPage.style.display = 'block';
+            container.innerHTML = '<p style="text-align:center; margin-top:50px;">⏳ Loading videos...</p>';
+            nameLabel.textContent = ''; // Reset tên
+
+            try {
+                // 1. Fetch dữ liệu
+                const res = await fetch(`/uploads/${folderName}/meta.json`);
+                if (!res.ok) throw new Error("Data file not found (meta.json)");
+                const meta = await res.json();
+
+                // 2. Hiện tên
+                nameLabel.textContent = `Candidate: ${meta.userName}`;
+
+                // 3. Render danh sách video
+                container.innerHTML = ''; // Xóa loading
+                const questions = meta.questions.sort((a, b) => a.index - b.index);
+
+                if (questions.length === 0) {
+                    container.innerHTML = '<p style="text-align:center;">No videos uploaded.</p>';
+                    return;
+                }
+
+                questions.forEach(q => {
+                    // Lấy đường dẫn video (ưu tiên mp4)
+                    const videoFile = q.mp4_filename || q.filename;
+                    const videoUrl = `/uploads/${folderName}/${videoFile}`;
+            
+                    const aiData = q.ai_evaluation || {};
+                    const metrics = q.metrics || {};
+
+                    // Tạo badge màu cho Priority
+                    let priorityBadge = '<span class="badge bg-orange">TB</span>';
+                    if(aiData.priority === 'HIGH') priorityBadge = '<span class="badge bg-green">High</span>';
+                    if(aiData.priority === 'LOW') priorityBadge = '<span class="badge bg-red">Low</span>';
+
+                    // Giao diện Card Video tối giản
+                    const html = `
+                        <div style="background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 30px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                            <div style="background: #667eea; padding: 12px 20px; color: white; font-weight: bold; font-size: 1.1em;">
+                                Video Câu ${q.index}
+                            </div>
+
+                            <div style="display:flex; flex-wrap:wrap;">
+                                <div style="flex: 2; min-width: 450px; background: #000;">
+                                    <video controls style="width: 100%; height: 100%; display:block; max-height: 500px;">
+                                        <source src="${videoUrl}" type="video/mp4">
+                                        <source src="${videoUrl}" type="video/webm">
+                                        Trình duyệt không hỗ trợ video.
+                                    </video>
+                                </div>
+                        
+                                <div style="flex: 1; min-width: 300px; padding: 25px; background: #fff; display: flex; flex-direction: column;">
+                            
+                                    <div style="flex-grow: 1;">
+                                        <div style="color: #888; text-transform: uppercase; font-size: 0.85em; letter-spacing: 1px; font-weight: 700; margin-bottom: 10px;">
+                                            📝 Question Content:
+                                        </div>
+                                        <p style="font-size: 1.3em; font-weight: 600; color: #2d3748; line-height: 1.5;">
+                                            "${q.text || 'Unknown Question Content'}"
+                                        </p>
+                                    </div>
+                            
+                                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 0.9em; color: #555;">
+                                            <div style="background:#f7fafc; padding:8px; border-radius:6px;">
+                                                🎯 Focus: <strong>${metrics.focus_score || 0}%</strong>
+                                            </div>
+                                            <div style="background:#f7fafc; padding:8px; border-radius:6px;">
+                                                😶 Silence: <strong>${metrics.silence_ratio_percent || 0}%</strong>
+                                            </div>
+                                            <div style="background:#f7fafc; padding:8px; border-radius:6px;">
+                                                📝 Words: <strong>${metrics.word_count || 0}</strong>
+                                            </div>
+                                            <div style="background:#f7fafc; padding:8px; border-radius:6px;">
+                                                🗣️ Speed: <strong>${metrics.speaking_rate_wpm || 0}</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.innerHTML += html;
+                });
+
+            } catch (err) {
+                container.innerHTML = `<p style="color:red; text-align:center;">Lỗi: ${err.message}</p>`;
+            }
+        }
+        function backToDashboard() {
+            // 1. Ẩn trang Review
+            document.getElementById('step-admin-review').style.display = 'none';
+
+            // 2. Tìm và dừng tất cả video đang chạy
+            const videos = document.querySelectorAll('video');
+            videos.forEach(v => {
+                v.pause();      // Dừng video
+                v.src = "";     // Ngắt kết nối video (để fix lỗi server báo pipe error)
+                v.load();
+            });
+
+            // 3. Hiện lại trang Dashboard
+            document.getElementById('step-dashboard').style.display = 'block';
+    
+            // (Tùy chọn) Load lại danh sách mới nhất để cập nhật trạng thái
+            loadDashboard();
+        }
     </script>
 </body>
 </html>
