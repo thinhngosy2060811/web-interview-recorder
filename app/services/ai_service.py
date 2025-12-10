@@ -305,8 +305,8 @@ IMPORTANT: Respond with ONLY the JSON object. No markdown, no extra text."""
             if finish_reason == 3:  # SAFETY blocked
                 logger.warning("⚠️ Response blocked by safety filter")
                 return {
-                    "priority": "MEDIUM",
-                    "reason": "Không thể phân tích do bộ lọc an toàn",
+                    "priority": "NOT EVALUATED",
+                    "reason": "Cannot be analyzed due to security filter.",
                     "ai_available": False,
                     "error": "SAFETY_BLOCKED"
                 }
@@ -350,8 +350,8 @@ IMPORTANT: Respond with ONLY the JSON object. No markdown, no extra text."""
         logger.error(f"❌ Failed to parse Gemini response: {e}")
         logger.error(f"Raw response: {response_text if 'response_text' in locals() else 'No response'}")
         return {
-            "priority": "MEDIUM",
-            "reason": "Lỗi phân tích AI (JSON parse error), cần review thủ công",
+            "priority": "NOT EVALUATED",
+            "reason": "AI parsing error (JSON parse error), requires manual review.",
             "ai_available": False,
             "error": f"JSON parse error: {str(e)}",
             "raw_response": response_text[:500] if 'response_text' in locals() else None
@@ -363,8 +363,8 @@ IMPORTANT: Respond with ONLY the JSON object. No markdown, no extra text."""
         logger.error(f"Full traceback: {traceback.format_exc()}")
         
         return {
-            "priority": "MEDIUM",
-            "reason": "Lỗi hệ thống AI, cần review thủ công",
+            "priority": "NOT EVALUATED",
+            "reason": "AI system error, manual review required.",
             "ai_available": False,
             "error": str(e)
         }
@@ -442,20 +442,20 @@ async def calculate_final_ranking(folder_path: Path):
         if not priorities:
             logger.warning("⚠️ No AI priorities available for final ranking")
             summary["final_priority"] = "UNKNOWN"
-            summary["final_reason"] = "Không có dữ liệu AI để đánh giá"
+            summary["final_reason"] = "There is no AI data to evaluate."
         else:
             high_count = priorities.count("HIGH")
             low_count = priorities.count("LOW")
             
             if high_count >= len(priorities) * 0.6:
                 final_priority = "HIGH"
-                final_reason = "Ứng viên xuất sắc - Nhiều câu trả lời chất lượng cao"
+                final_reason = "Outstanding candidate - Many high-quality answers"
             elif low_count >= len(priorities) * 0.5:
                 final_priority = "LOW"
-                final_reason = "Ứng viên yếu - Nhiều câu trả lời kém chất lượng"
+                final_reason = "Weak candidates - Many poor-quality answers"
             else:
                 final_priority = "MEDIUM"
-                final_reason = "Ứng viên trung bình - Cần xem xét kỹ hơn"
+                final_reason = "Average candidate - Needs closer consideration"
             
             summary["final_priority"] = final_priority
             summary["final_reason"] = final_reason

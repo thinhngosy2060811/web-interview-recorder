@@ -39,7 +39,6 @@ async function initAI() {
                 isViolation = true;
                 currentViolationType = "MULTIPLE FACES DETECTED!";
                 aiAnalysis.multipleFacesFrames++;
-                aiAnalysis.lookingAwayFrames++;
                 warningMsg = currentViolationType;
                 if (!aiAnalysis.warnings.includes(currentViolationType)) {
                     aiAnalysis.warnings.push(currentViolationType);
@@ -78,23 +77,23 @@ async function initAI() {
                 const openRatioRight = getEyeOpenRatio(r_top, r_bottom, r_inner, r_outer);
                 const openRatioLeft = getEyeOpenRatio(l_top, l_bottom, l_inner, l_outer);
 
-                if (yawRatio < 0.3 || yawRatio > 3.0) {
+                if (yawRatio < 0.8 || yawRatio > 3.2) {
                     isViolation = true;
                     currentViolationType = "PLEASE LOOK STRAIGHT!";
                 }
-                else if (pitchRatio < 0.6) {
-                    isViolation = true;
-                    currentViolationType = "HEAD TOO LOW!";
-                } else if (pitchRatio > 1.6) {
+                else if (pitchRatio < 1.0) {
                     isViolation = true;
                     currentViolationType = "HEAD TOO HIGH!";
+                } else if (pitchRatio > 1.6) {
+                    isViolation = true;
+                    currentViolationType = "HEAD TOO LOW!";
                 }
                 else {
-                    const isGlancingH = (gazeH_Right < 0.25 || gazeH_Right > 0.75) && 
-                                        (gazeH_Left < 0.25 || gazeH_Left > 0.75);
+                    const isGlancingH = (gazeH_Right < 0.3 || gazeH_Right > 0.7) && 
+                                        (gazeH_Left < 0.3 || gazeH_Left > 0.7);
                     
-                    const isGlancingV = (gazeV_Right < 0.1 || gazeV_Right > 0.9) && 
-                                        (gazeV_Left < 0.1 || gazeV_Left > 0.9);
+                    const isGlancingV = (gazeV_Right < 0.2 || gazeV_Right > 0.8) && 
+                                        (gazeV_Left < 0.2 || gazeV_Left > 0.8);
 
                     if (isGlancingH) {
                         isViolation = true;
@@ -109,7 +108,6 @@ async function initAI() {
             isViolation = true;
             currentViolationType = "FACE NOT DETECTED!";
             aiAnalysis.noFaceFrames++;
-            aiAnalysis.lookingAwayFrames++;
             warningMsg = currentViolationType;
             if (!aiAnalysis.warnings.includes(currentViolationType)) {
                 aiAnalysis.warnings.push(currentViolationType);
