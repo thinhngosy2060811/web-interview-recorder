@@ -62,7 +62,7 @@ async function loadDashboard() {
     document.getElementById('step-dashboard').style.display = 'block';
 
     const tbody = document.getElementById('candidate-list');
-    tbody.innerHTML = '<tr><td colspan="5">Đang tải dữ liệu...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5">Loading data...</td></tr>';
 
     try {
         const res = await fetch(`${API_BASE}/api/admin/candidates?token=${token}`);
@@ -74,13 +74,17 @@ async function loadDashboard() {
             let priorityColor = 'green';
             if (c.priority === 2) priorityColor = 'orange';
             if (c.priority === 3) priorityColor = 'red';
+            if (c.priority === 4) priorityColor = 'gray';
 
-            tbody.innerHTML += `
+            tbody.innerHTML +=`
                 <tr>
                     <td><strong>${c.name}</strong></td>
                     <td>${c.time}</td>
                     <td style="color:${priorityColor}; font-weight:bold;">
-                        ${c.priority === 1 ? '⭐ High' : c.priority === 2 ? 'Medium' : '❌ Low'}
+                        ${c.priority === 1 ? '⭐ High' :
+                          c.priority === 2 ? '🔶 Medium' :
+                          c.priority === 3 ? '❌ Low': 
+                          c,priority === 4 ? '❔ Not Evaluated': 'NOT EVALUATED'}
                     </td>
                     <td>${c.note}</td>
                     <td>
@@ -491,7 +495,8 @@ async function nextQuestion() {
         await uploadVideo();
         
         // Sau khi upload xong mới chuyển câu
-        if (uploadRetryCount === 0) { // Upload thành công
+        const statusEl = document.getElementById('upload-status');
+        if (statusEl.textContent.includes('Upload successful')) {
             pendingVideoBlob = null;
             
             if (currentQuestionIndex >= QUESTIONS.length - 1) {
@@ -590,7 +595,7 @@ async function viewCandidate(folderName) {
             let priorityBadge = '<span class="badge bg-orange">TB</span>';
             if(aiData.priority === 'HIGH') priorityBadge = '<span class="badge bg-green">High</span>';
             if(aiData.priority === 'LOW') priorityBadge = '<span class="badge bg-red">Low</span>';
-
+            if(aiData.priority === 'NOT EVALUATED') priorityBadge = '<span class="badge bg-gray">Not Evaluated</span>';
             // Giao diện Card Video tối giản
             const html = `
                 <div style="background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 30px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">

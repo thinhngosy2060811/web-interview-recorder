@@ -105,7 +105,7 @@ button:disabled {
     /* Cách mép trên 15px */
     right: 15px;
     /* Cách mép phải 15px */
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(255, 255, 255, 0.95);
     /* Nền đen mờ cho dễ đọc */
     color: white;
     padding: 5px 15px;
@@ -114,7 +114,7 @@ button:disabled {
     font-weight: bold;
     z-index: 10;
     /* Nổi lên trên cùng */
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid rgb(0, 0, 0, 0.3);
 }
 
 #preview {
@@ -318,4 +318,8 @@ p {
 .bg-orange {
     background: #ffc107;
     color: #333;
+}
+.bg-gray {
+    background: #9e9e9e;
+    color: white;
 }
