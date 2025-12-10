@@ -1,0 +1,13 @@
+=== TRANSCRIPT Q3 ===
+Question: Explain the difference between correlation and causation.
+Time: 2025-12-10T21:21:37.605447+07:00
+
+Well, coloration describes movement pattern between two variables. Cozation means one variable directly influences the other. I never assumed causation unless supported by domain context, control, experiment or strong quasi-experimental evidence. This prevents incorrect decision that arise from misinterpreting coincidental pattern as causal drivers.
+
+--- TIMESTAMPS ---
+[00:00.00 -> 00:06.64] Well, coloration describes movement pattern between two variables.
+[00:06.64 -> 00:11.44] Cozation means one variable directly influences the other.
+[00:11.44 -> 00:16.84] I never assumed causation unless supported by domain context, control, experiment or
+[00:16.84 -> 00:20.96] strong quasi-experimental evidence.
+[00:20.96 -> 00:27.64] This prevents incorrect decision that arise from misinterpreting coincidental pattern
+[00:27.64 -> 00:28.96] as causal drivers.

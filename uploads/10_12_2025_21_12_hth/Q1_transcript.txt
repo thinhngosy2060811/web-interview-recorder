@@ -1,0 +1,19 @@
+=== TRANSCRIPT Q1 ===
+Question: Please introduce yourself and briefly describe your background.
+Time: 2025-12-10T21:15:08.460484+07:00
+
+My name is Huang Tang and I'm a data analyst with strong foundation in transforming operational data into actionable insights. So what defines me is my background is the balance between the technical depth and business understanding. I confidently with SQL, Python, Visualization 2 and Statix Go reasoning. But I always approach data from a decision making perspective, not as just number but as signal of customer behavior, operational health and business opportunities. Well I have experienced working with real world message data set especially retail and logistic data where I built KPI framework, clean large table, design dashboard and proposed data drive action that improve inventory allocation and reduce stock risk. I'm driven by simple principle. Insignly matter when changing the business in a measurable way.
+
+--- TIMESTAMPS ---
+[00:00.00 -> 00:07.56] My name is Huang Tang and I'm a data analyst with strong foundation in transforming operational
+[00:07.56 -> 00:10.20] data into actionable insights.
+[00:10.20 -> 00:15.72] So what defines me is my background is the balance between the technical depth and business
+[00:15.72 -> 00:16.96] understanding.
+[00:16.96 -> 00:23.96] I confidently with SQL, Python, Visualization 2 and Statix Go reasoning.
+[00:23.96 -> 00:29.56] But I always approach data from a decision making perspective, not as just number but
+[00:29.56 -> 00:35.16] as signal of customer behavior, operational health and business opportunities.
+[00:35.16 -> 00:39.56] Well I have experienced working with real world message data set especially retail and
+[00:39.56 -> 00:46.84] logistic data where I built KPI framework, clean large table, design dashboard and proposed
+[00:46.84 -> 00:52.32] data drive action that improve inventory allocation and reduce stock risk.
+[00:52.32 -> 00:54.32] I'm driven by simple principle.
+[00:54.32 -> 00:59.04] Insignly matter when changing the business in a measurable way.

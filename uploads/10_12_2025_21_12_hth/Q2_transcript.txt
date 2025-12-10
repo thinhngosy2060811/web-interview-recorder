@@ -1,0 +1,18 @@
+=== TRANSCRIPT Q2 ===
+Question: Why are you interested in working as a Data Analyst?
+Time: 2025-12-10T21:16:50.113804+07:00
+
+Well, I'm interested in this role because it's allowed me to combine analytical thinking with problem solving at scale. I enjoy taking ambiguous and structured situations and turning them into clear narrative support by data. What excited me the most is the data analyst's directives' influence and decision from improving customer experience to optimizing internal workflows. For me, being a data analyst is not just about writing queries or building dashboards, it's about understanding why the business operates and the way it's done. I'm identifying what truly drives an outcome and the delivering insight that the team can act on immediately. This blend of logic, curiosity, and impact is the reason I want to pursue in this path.
+
+--- TIMESTAMPS ---
+[00:00.00 -> 00:08.52] Well, I'm interested in this role because it's allowed me to combine analytical thinking
+[00:08.52 -> 00:10.28] with problem solving at scale.
+[00:10.28 -> 00:16.24] I enjoy taking ambiguous and structured situations and turning them into clear narrative support
+[00:16.24 -> 00:17.24] by data.
+[00:17.24 -> 00:22.24] What excited me the most is the data analyst's directives' influence and decision from improving
+[00:22.24 -> 00:27.00] customer experience to optimizing internal workflows.
+[00:27.00 -> 00:31.40] For me, being a data analyst is not just about writing queries or building dashboards,
+[00:31.40 -> 00:36.32] it's about understanding why the business operates and the way it's done.
+[00:36.32 -> 00:41.96] I'm identifying what truly drives an outcome and the delivering insight that the team can
+[00:41.96 -> 00:44.04] act on immediately.
+[00:44.04 -> 00:49.76] This blend of logic, curiosity, and impact is the reason I want to pursue in this path.
