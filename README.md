@@ -8,10 +8,6 @@
 
 <br />
 <div align="center">
-  <a href="https://github.com/thinhngosy2060811/web-interview-recorder">
-    <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Logo" width="80" height="80">
-  </a>
-
 <h3 align="center">Web Interview Recorder (Integrated)</h3>
 
   <p align="center">
