@@ -1,0 +1,215 @@
+{
+  "userName": "hth",
+  "sessionStartTime": "2025-12-10T21:12:06.449867+07:00",
+  "timeZone": "Asia/Bangkok",
+  "interviewQuestions": [
+    {
+      "index": 1,
+      "text": "Please introduce yourself and briefly describe your background."
+    },
+    {
+      "index": 2,
+      "text": "Why are you interested in working as a Data Analyst?"
+    },
+    {
+      "index": 3,
+      "text": "Explain the difference between correlation and causation."
+    },
+    {
+      "index": 4,
+      "text": "What SQL functions or commands do you use most often, and why?"
+    },
+    {
+      "index": 5,
+      "text": "What techniques do you use to detect outliers?"
+    }
+  ],
+  "questions": [
+    {
+      "index": 1,
+      "text": "Please introduce yourself and briefly describe your background.",
+      "uploadedAt": "2025-12-10T21:14:51.535191+07:00",
+      "filename": "Q1.webm",
+      "mp4_filename": "Q1.mp4",
+      "size": 19795159,
+      "aiAnalysis": {
+        "focusScore": 100,
+        "warnings": []
+      },
+      "transcriptionStatus": "completed",
+      "transcriptFile": "Q1_transcript.txt",
+      "analyzed_at": "2025-12-10T21:15:17.200787+07:00",
+      "metrics": {
+        "word_count": 127,
+        "focus_score": 100,
+        "speaking_rate_wpm": 129.1,
+        "wpm_category": "good",
+        "silence_ratio_percent": 0.0,
+        "total_pause_seconds": 0.0,
+        "num_pauses": 0,
+        "filler_density_percent": 0.0,
+        "duration_seconds": 59.04,
+        "flagged_as_bad": false,
+        "flag_reasons": []
+      },
+      "ai_evaluation": {
+        "priority": "HIGH",
+        "reason": "The candidate provides a clear, concise, and well-structured introduction, effectively highlighting relevant technical skills, business acumen, and measurable impact. Their communication is confident and fluent.",
+        "content_score": 9,
+        "communication_score": 9,
+        "overall_impression": "positive",
+        "ai_available": true
+      }
+    },
+    {
+      "index": 2,
+      "text": "Why are you interested in working as a Data Analyst?",
+      "uploadedAt": "2025-12-10T21:16:36.924742+07:00",
+      "filename": "Q2.webm",
+      "mp4_filename": "Q2.mp4",
+      "size": 16991482,
+      "aiAnalysis": {
+        "focusScore": 100,
+        "warnings": []
+      },
+      "transcriptionStatus": "completed",
+      "transcriptFile": "Q2_transcript.txt",
+      "analyzed_at": "2025-12-10T21:17:04.032590+07:00",
+      "metrics": {
+        "word_count": 118,
+        "focus_score": 100,
+        "speaking_rate_wpm": 142.3,
+        "wpm_category": "good",
+        "silence_ratio_percent": 0.0,
+        "total_pause_seconds": 0.0,
+        "num_pauses": 0,
+        "filler_density_percent": 0.0,
+        "duration_seconds": 49.76,
+        "flagged_as_bad": false,
+        "flag_reasons": []
+      },
+      "ai_evaluation": {
+        "priority": "MEDIUM",
+        "reason": "Lỗi hệ thống AI, cần review thủ công",
+        "content_score": 0,
+        "communication_score": 0,
+        "overall_impression": "neutral",
+        "ai_available": false
+      }
+    },
+    {
+      "index": 3,
+      "text": "Explain the difference between correlation and causation.",
+      "uploadedAt": "2025-12-10T21:21:27.503012+07:00",
+      "filename": "Q3.webm",
+      "mp4_filename": "Q3.mp4",
+      "size": 9863044,
+      "aiAnalysis": {
+        "focusScore": 100,
+        "warnings": []
+      },
+      "transcriptionStatus": "completed",
+      "transcriptFile": "Q3_transcript.txt",
+      "analyzed_at": "2025-12-10T21:21:51.582049+07:00",
+      "metrics": {
+        "word_count": 44,
+        "focus_score": 100,
+        "speaking_rate_wpm": 91.2,
+        "wpm_category": "slow",
+        "silence_ratio_percent": 0.0,
+        "total_pause_seconds": 0.0,
+        "num_pauses": 0,
+        "filler_density_percent": 0.0,
+        "duration_seconds": 28.96,
+        "flagged_as_bad": false,
+        "flag_reasons": []
+      },
+      "ai_evaluation": {
+        "priority": "HIGH",
+        "reason": "The candidate demonstrates a strong practical understanding of the difference between correlation and causation, emphasizing the importance of evidence and the risks of misinterpretation, which is crucial for a Data Analyst. While the initial definition of correlation was slightly vague and contained a typo, the subsequent explanation of practical application was excellent.",
+        "content_score": 8,
+        "communication_score": 7,
+        "overall_impression": "positive",
+        "ai_available": true
+      }
+    },
+    {
+      "index": 4,
+      "text": "What SQL functions or commands do you use most often, and why?",
+      "uploadedAt": "2025-12-10T21:24:55.567427+07:00",
+      "filename": "Q4.webm",
+      "mp4_filename": "Q4.mp4",
+      "size": 10689253,
+      "aiAnalysis": {
+        "focusScore": 100,
+        "warnings": []
+      },
+      "transcriptionStatus": "completed",
+      "transcriptFile": "Q4_transcript.txt",
+      "analyzed_at": "2025-12-10T21:25:19.343157+07:00",
+      "metrics": {
+        "word_count": 65,
+        "focus_score": 100,
+        "speaking_rate_wpm": 119.9,
+        "wpm_category": "good",
+        "silence_ratio_percent": 0.0,
+        "total_pause_seconds": 0.0,
+        "num_pauses": 0,
+        "filler_density_percent": 0.0,
+        "duration_seconds": 32.52,
+        "flagged_as_bad": false,
+        "flag_reasons": []
+      },
+      "ai_evaluation": {
+        "priority": "MEDIUM",
+        "reason": "Candidate identifies relevant SQL functions (window functions, CTEs, aggregation) and their purpose, but the response includes confusing phrasing and technical typos ('CTS', 'agrariation'), indicating a potential lack of precision.",
+        "content_score": 7,
+        "communication_score": 6,
+        "overall_impression": "neutral",
+        "ai_available": true
+      }
+    },
+    {
+      "index": 5,
+      "text": "What techniques do you use to detect outliers?",
+      "uploadedAt": "2025-12-10T21:28:06.715358+07:00",
+      "filename": "Q5.webm",
+      "mp4_filename": "Q5.mp4",
+      "size": 13123150,
+      "aiAnalysis": {
+        "focusScore": 99,
+        "warnings": [
+          "FACE NOT DETECTED!"
+        ]
+      },
+      "transcriptionStatus": "completed",
+      "transcriptFile": "Q5_transcript.txt",
+      "analyzed_at": "2025-12-10T21:28:24.502113+07:00",
+      "metrics": {
+        "word_count": 76,
+        "focus_score": 99,
+        "speaking_rate_wpm": 119.5,
+        "wpm_category": "good",
+        "silence_ratio_percent": 0.0,
+        "total_pause_seconds": 0.0,
+        "num_pauses": 0,
+        "filler_density_percent": 0.0,
+        "duration_seconds": 38.16,
+        "flagged_as_bad": false,
+        "flag_reasons": []
+      },
+      "ai_evaluation": {
+        "priority": "HIGH",
+        "reason": "The candidate provided a comprehensive answer, detailing various outlier detection techniques and, critically, emphasizing the importance of business context and interpretation. This demonstrates strong technical understanding and a practical, business-oriented approach.",
+        "content_score": 9,
+        "communication_score": 8,
+        "overall_impression": "positive",
+        "ai_available": true
+      }
+    }
+  ],
+  "questionsCount": 5,
+  "sessionEnded": true,
+  "sessionEndTime": "2025-12-10T21:28:10.252624+07:00",
+  "transcriptsGenerated": 4
+}
