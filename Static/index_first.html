@@ -102,8 +102,12 @@
                 <button id="btn-start-record" onclick="startRecording()">Start Recording</button>
                 <button id="btn-stop-record" onclick="stopRecording()" disabled>Stop Recording</button>
                 <button id="btn-next" onclick="nextQuestion()" disabled>Next Question</button>
+                <button id="btn-retry-upload" onclick="retryUpload()" style="display: none; background: #ff9800;">
+                    🔄 Retry Upload
+                <button>
             </div>
-        </div> <div id="step-complete" style="display: none;">
+        <div>
+        <div id="step-complete" style="display: none;">
             <h1>Completed!</h1>
             <h2>Thank you for completing the interview</h2>
             <div style="background: #e8f5e9; padding: 20px; border-radius: 8px; margin: 20px 0;">
@@ -112,7 +116,6 @@
             </div>
             <p>Your videos have been saved successfully. We will contact you soon!</p>
         </div>
-
     </div>
     <script src="/static/js/config.js"></script>
 
