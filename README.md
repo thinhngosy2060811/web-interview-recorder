@@ -8,6 +8,8 @@
 
 <br />
 <div align="center">
+  <a href="https://github.com/thinhngosy2060811/web-interview-recorder">
+
 <h3 align="center">Web Interview Recorder (Integrated)</h3>
 
   <p align="center">
@@ -107,24 +109,35 @@ The backend exposes RESTful endpoints via FastAPI. Below are the core endpoints:
 | **POST** | `/api/session/finish` | Finalizes session & grading | `{ "folder": "...", "questionsCount": 5 }` | `{ "ok": true }` |
 | **GET** | `/api/admin/candidates` | Fetches list for dashboard | Query Param: `?token=...` | `{ "candidates": [...] }` |
 
-### 📂 File Handling & Naming Convention
+### 💻 API Usage Example
 
-To ensure organized data storage, the system implements a strict naming strategy in the `uploads/` directory:
+Example of a `cURL` request to upload a video segment:
 
+```bash
+curl -X POST "https://localhost:8000/api/upload-one" \
+     -H "Authorization: Bearer candidate_token" \
+     -F "folder=25_10_2025_thinh_ngo" \
+     -F "questionIndex=1" \
+     -F "video=@/path/to/recording.webm" \
+     -F "analysisData={\"focusScore\": 95}"
+```
+
+### 📂 File Handling & Constraints
+
+To ensure system stability and security, the system enforces strict validation on all uploads.
+
+| Constraint | Specification | Description |
+| :--- | :--- | :--- |
+| **Max File Size** | `50 MB` | Hard limit per upload. Files exceeding this are rejected (`413 Payload Too Large`). |
+| **Allowed MIME Types** | `video/webm`, `video/mp4` | Validated via **Magic Bytes** (Hex Signature) analysis to prevent extension spoofing. |
+| **Retry Policy** | `3 Attempts` | Exponential backoff strategy (1s → 2s → 4s delay) implemented in Frontend to handle network instability. |
+| **Storage Structure** | `uploads/{SessionID}/` | Files are automatically organized into session-specific folders. |
+
+#### Naming Convention Strategy
+Files are saved with a strict naming strategy to maintain order:
 * **Session Folder:** `{DD}_{MM}_{YYYY}_{HH}_{MM}_{SanitizedUserName}`
-    * *Example:* `25_10_2025_14_30_thinh_ngo`
-* **Video Files:** * `Q{index}.webm` (Raw upload from browser)
-    * `Q{index}.mp4` (Converted for compatibility)
-* **Metadata:** `meta.json` stores user info, question list, and AI analysis results.
-
-### 🛡️ Limits & Reliability
-
-* **File Size Limit:** The system enforces a **50MB** hard limit per video upload (Configured in `config.py`). If a file exceeds this, a `413 Payload Too Large` error is returned.
-* **Retry Policy:**
-    * The frontend implements an **Exponential Backoff** retry mechanism in `main.js`.
-    * If an upload fails (network error), it retries **3 times** (Wait times: 1s, 2s, 4s) before notifying the user.
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+* **Video Files:** `Q{index}.webm` (Raw) $\rightarrow$ `Q{index}.mp4` (Converted)
+* **Metadata:** `meta.json` (Stores analysis results)
 
 ## Getting Started
 
