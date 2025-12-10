@@ -272,6 +272,8 @@ async def get_candidates(token: str):
                         prio = final_summary.get("final_priority", "MEDIUM")
                         if prio == "HIGH": priority_num = 1
                         elif prio == "LOW": priority_num = 3
+                        elif prio == "NOT EVALUATED": priority_num = 4  # Thấp nhất
+                        else: priority_num = 2
                     elif qs:
                         # Lọc ra các câu đã được AI chấm
                         evaluated_qs = [q for q in qs if q.get("ai_evaluation", {}).get("ai_available")]
@@ -290,8 +292,11 @@ async def get_candidates(token: str):
                             prio = target_q["ai_evaluation"].get("priority", "MEDIUM")
                             if prio == "HIGH": priority_num = 1
                             elif prio == "LOW": priority_num = 3
+                            elif prio == "NOT EVALUATED": priority_num = 4  # Thấp nhất
+                            else: priority_num = 2
                         else:
                             ai_note = "Waiting for AI..."
+                            priority_num = 4
                     # Tính focus trung bình
                     avg_focus = 0
                     if qs:

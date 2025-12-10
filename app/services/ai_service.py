@@ -350,7 +350,7 @@ IMPORTANT: Respond with ONLY the JSON object. No markdown, no extra text."""
         logger.error(f"❌ Failed to parse Gemini response: {e}")
         logger.error(f"Raw response: {response_text if 'response_text' in locals() else 'No response'}")
         return {
-            "priority": "MEDIUM",
+            "priority": "NOT EVALUATED",
             "reason": "Lỗi phân tích AI (JSON parse error), cần review thủ công",
             "ai_available": False,
             "error": f"JSON parse error: {str(e)}",
@@ -363,7 +363,7 @@ IMPORTANT: Respond with ONLY the JSON object. No markdown, no extra text."""
         logger.error(f"Full traceback: {traceback.format_exc()}")
         
         return {
-            "priority": "MEDIUM",
+            "priority": "NOT EVALUATED",
             "reason": "Lỗi hệ thống AI, cần review thủ công",
             "ai_available": False,
             "error": str(e)

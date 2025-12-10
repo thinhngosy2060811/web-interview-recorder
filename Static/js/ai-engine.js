@@ -83,10 +83,10 @@ async function initAI() {
                 }
                 else if (pitchRatio < 1.0) {
                     isViolation = true;
-                    currentViolationType = "HEAD TOO LOW!";
+                    currentViolationType = "HEAD TOO HIGH!";
                 } else if (pitchRatio > 1.6) {
                     isViolation = true;
-                    currentViolationType = "HEAD TOO HIGH!";
+                    currentViolationType = "HEAD TOO LOW!";
                 }
                 else {
                     const isGlancingH = (gazeH_Right < 0.3 || gazeH_Right > 0.7) && 
