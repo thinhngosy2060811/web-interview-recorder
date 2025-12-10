@@ -62,7 +62,7 @@ async function loadDashboard() {
     document.getElementById('step-dashboard').style.display = 'block';
 
     const tbody = document.getElementById('candidate-list');
-    tbody.innerHTML = '<tr><td colspan="5">Đang tải dữ liệu...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5">Loading data...</td></tr>';
 
     try {
         const res = await fetch(`${API_BASE}/api/admin/candidates?token=${token}`);

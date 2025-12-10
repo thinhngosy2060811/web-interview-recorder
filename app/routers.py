@@ -45,7 +45,7 @@ async def verify_token(request: TokenRequest):
     elif request.token in CANDIDATE_TOKENS:
         return {"ok": True, "role": "candidate"}
     else:
-        raise HTTPException(status_code=401, detail="Token không hợp lệ")
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 @router.post("/api/session/start")
 async def session_start(request: SessionStartRequest):
