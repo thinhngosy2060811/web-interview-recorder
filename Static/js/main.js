@@ -84,7 +84,7 @@ async function loadDashboard() {
                         ${c.priority === 1 ? '⭐ High' :
                           c.priority === 2 ? '🔶 Medium' :
                           c.priority === 3 ? '❌ Low': 
-                          c,priority === 4 ? '❔ Not Evaluated': 'NOT EVALUATED'}
+                          c.priority === 4 ? '❔ Not Evaluated': 'NOT EVALUATED'}
                     </td>
                     <td>${c.note}</td>
                     <td>
