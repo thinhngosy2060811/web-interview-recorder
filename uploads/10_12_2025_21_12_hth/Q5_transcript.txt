@@ -1,0 +1,15 @@
+=== TRANSCRIPT Q5 ===
+Question: What techniques do you use to detect outliers?
+Time: 2025-12-10T21:28:17.557447+07:00
+
+So, I combined exploratory visualizations, statistical results and business reasoning to Zscore and IQR for symmetric distribution. I used box-fold and density curves to inspect multi-model patterns, then isolation for us for multi-dimensional datasets. But detection is only half of the task. I always verify whether an outliner is an error or a critical business event. For example, a sudden spike in demand may indicate a trend of noise. This presents removing inside disguise as animalized.
+
+--- TIMESTAMPS ---
+[00:00.00 -> 00:08.16] So, I combined exploratory visualizations, statistical results and business reasoning
+[00:08.16 -> 00:13.58] to Zscore and IQR for symmetric distribution.
+[00:13.58 -> 00:20.52] I used box-fold and density curves to inspect multi-model patterns, then isolation for us
+[00:20.52 -> 00:23.76] for multi-dimensional datasets.
+[00:23.76 -> 00:25.68] But detection is only half of the task.
+[00:25.68 -> 00:31.08] I always verify whether an outliner is an error or a critical business event.
+[00:31.08 -> 00:35.36] For example, a sudden spike in demand may indicate a trend of noise.
+[00:35.36 -> 00:38.16] This presents removing inside disguise as animalized.
