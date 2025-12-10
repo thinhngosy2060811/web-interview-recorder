@@ -17,7 +17,7 @@
             <h2>Step 1: Authentication</h2>
             <label>Token: <input type="text" id="token"placeholder="Enter your token" autocomplete="off"></label>
             <label>Ho ten: <input type="text" id="userName" placeholder="Enter your name" autocomplete="off"></label>
-            <button onclick="verifyAndStart()">Start Interview</button>
+            <button onclick="verifyAndStart()">Start</button>
             <p id="token-status" class="status-text"></p>
         </div>
 
@@ -102,7 +102,6 @@
                 <button id="btn-start-record" onclick="startRecording()">Start Recording</button>
                 <button id="btn-stop-record" onclick="stopRecording()" disabled>Stop Recording</button>
                 <button id="btn-next" onclick="nextQuestion()" disabled>Next Question</button>
-                <button id="btn-finish" onclick="finishInterview()" style="display: none;">Finish Interview</button>
             </div>
         <div id="step-complete" style="display: none;">
             <h1>Completed!</h1>

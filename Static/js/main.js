@@ -80,7 +80,7 @@ async function loadDashboard() {
                     <td><strong>${c.name}</strong></td>
                     <td>${c.time}</td>
                     <td style="color:${priorityColor}; font-weight:bold;">
-                        ${c.priority === 1 ? '⭐ High' : c.priority === 2 ? '⚠️ Medium' : '❌ Low'}
+                        ${c.priority === 1 ? '⭐ High' : c.priority === 2 ? 'Medium' : '❌ Low'}
                     </td>
                     <td>${c.note}</td>
                     <td>
@@ -102,8 +102,16 @@ async function requestPermissions() {
 
     try {
         stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: true
+            video: {
+            width: { ideal: 1280, max: 1280 },
+            height: { ideal: 720, max: 720 },
+            frameRate: { ideal: 30, max: 30 }
+            },
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+            }
         });
         document.getElementById('mic-visualizer').style.display = 'block';
 
@@ -186,8 +194,13 @@ function loadQuestion(index) {
     document.getElementById('btn-stop-record').disabled = true;
     document.getElementById('btn-next').disabled = true;
     
+    const btnNext = document.getElementById('btn-next');
     if (index >= QUESTIONS.length - 1) {
-        document.getElementById('btn-finish').style.display = 'inline-block';
+        btnNext.textContent = 'Finish Interview';
+        btnNext.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
+    } else {
+        btnNext.textContent = 'Next Question';
+        btnNext.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
     }
     speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(QUESTIONS[index]);
@@ -311,6 +324,13 @@ function showVideoReview() {
     const videoUrl = URL.createObjectURL(pendingVideoBlob);
     const reviewPlayer = document.getElementById('review-player');
     reviewPlayer.src = videoUrl;
+
+    const btnCancel = document.querySelector('#review-section button[onclick="cancelReview()"]');
+    if (retryCountForCurrentQuestion >= MAX_RETRIES_PER_QUESTION) {
+        btnCancel.style.display = 'none'; // Ẩn nút Cancel/Retry
+    } else {
+        btnCancel.style.display = 'inline-block'; // Hiện nút Cancel/Retry
+    }
     
     // Hiển thị phần review
     document.getElementById('review-section').style.display = 'block';
@@ -440,7 +460,7 @@ async function uploadVideo(isRetry = false) {
 
         const data = await response.json();
         
-        statusEl.textContent = `Upload successful: ${data.savedAs} (${(blob.size / 1024 / 1024).toFixed(2)}MB) - Focus score: ${focusScore}%`;
+        statusEl.textContent = `Upload successful: ${data.savedAs} (${(blob.size / 1024 / 1024).toFixed(2)}MB)`;
         statusEl.className = 'status-text status-success';
         
         document.getElementById('btn-next').disabled = false;
@@ -474,10 +494,10 @@ async function nextQuestion() {
         if (uploadRetryCount === 0) { // Upload thành công
             pendingVideoBlob = null;
             
-            if (currentQuestionIndex < QUESTIONS.length - 1) {
-                loadQuestion(currentQuestionIndex + 1);
+            if (currentQuestionIndex >= QUESTIONS.length - 1) {
+                await finishInterview();
             } else {
-                alert('All questions answered. Please click "Finish Interview"');
+                loadQuestion(currentQuestionIndex + 1);
             }
         }
     } else {
@@ -486,7 +506,9 @@ async function nextQuestion() {
 }
 
 async function finishInterview() {
-    if (!confirm('Are you sure you want to finish the interview?')) {
+    const shouldConfirm = !pendingVideoBlob || currentQuestionIndex < QUESTIONS.length - 1;
+    
+    if (shouldConfirm && !confirm('Are you sure you want to finish the interview?')) {
         return;
     }
 
