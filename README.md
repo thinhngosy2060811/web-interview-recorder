@@ -258,8 +258,8 @@ Contributions are what make the open source community such an amazing place to l
 
 * **Thinh Ngo** - [@thinhngosy2060811](https://github.com/thinhngosy2060811)
 * **Hong Anh** - [@anhhongdangcode-pixel](https://github.com/anhhongdangcode-pixel)
-* **Nuan** - [@nuan2779](https://github.com/nuan2779)
-* **Fort** - [@Fort224](https://github.com/Fort224)
+* **Huu Luan** - [@nuan2779](https://github.com/nuan2779)
+* **Hoang Thanh** - [@Fort224](https://github.com/Fort224)
 
 Project Link: [https://github.com/thinhngosy2060811/web-interview-recorder](https://github.com/thinhngosy2060811/web-interview-recorder)
 
