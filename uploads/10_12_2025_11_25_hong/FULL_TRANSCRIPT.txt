@@ -1,0 +1,61 @@
+=== FULL INTERVIEW TRANSCRIPT ===
+
+Candidate: hong
+Session: 2025-12-10T11:25:57.472321+07:00
+
+
+============================================================
+=== TRANSCRIPT Q1 ===
+Question: Please introduce yourself and briefly describe your background.
+Time: 2025-12-10T11:26:42.135577+07:00
+
+Hello, my name is Hong-Ngeng. Currently I'm studying data science at National Economic University and I'm really fond of data analysis because that is one of my dream career because I think I can make many money from this.
+
+--- TIMESTAMPS ---
+[00:00.00 -> 00:06.84] Hello, my name is Hong-Ngeng. Currently I'm studying data science at National Economic
+[00:06.84 -> 00:14.76] University and I'm really fond of data analysis because that is one of my dream career because
+[00:14.76 -> 00:16.88] I think I can make many money from this.
+
+
+============================================================
+=== TRANSCRIPT Q2 ===
+Question: Why are you interested in working as a Data Analyst?
+Time: 2025-12-10T11:27:38.046917+07:00
+
+The reason why I'm looking at this analysis is because I think it is really interesting when working with many diverse departments such as finance, e-commerce, or something like that. It's really diverse so that I can experience myself, different version of myself. And also I want to hone my skill of analyzing data sets so that I can conclude that from to make some insight from that data set.
+
+--- TIMESTAMPS ---
+[00:00.00 -> 00:09.50] The reason why I'm looking at this analysis is because I think it is really interesting
+[00:09.50 -> 00:16.82] when working with many diverse departments such as finance, e-commerce, or something
+[00:16.82 -> 00:17.82] like that.
+[00:17.82 -> 00:23.00] It's really diverse so that I can experience myself, different version of myself.
+[00:23.00 -> 00:29.86] And also I want to hone my skill of analyzing data sets so that I can conclude that from
+[00:29.86 -> 00:35.62] to make some insight from that data set.
+
+
+============================================================
+=== TRANSCRIPT Q3 ===
+Question: Describe the steps you usually take to clean a messy dataset.
+Time: 2025-12-10T11:30:22.992770+07:00
+
+Yeah, the armor... And the pork. First one up.
+
+--- TIMESTAMPS ---
+[00:00.00 -> 00:02.00] Yeah, the armor...
+[00:02.00 -> 00:03.00] And the pork.
+[00:03.00 -> 00:04.00] First one up.
+
+
+============================================================
+=== TRANSCRIPT Q4 ===
+Question: How would you find duplicate records in a table using SQL?
+Time: 2025-12-10T11:31:35.210857+07:00
+
+So, I will buy few that define uniqueness and use having to filter group with more than one record. For example, I will use code select, column 1, column 2, and from table, group buy and having this clearly highlight duplicate keys and have decide what whether to remove or
+
+--- TIMESTAMPS ---
+[00:00.00 -> 00:09.64] So, I will buy few that define uniqueness and use having to filter group with more than
+[00:09.64 -> 00:10.64] one record.
+[00:10.64 -> 00:20.32] For example, I will use code select, column 1, column 2, and from table, group buy and
+[00:20.32 -> 00:26.40] having this clearly highlight duplicate keys and have decide what whether to remove or
+

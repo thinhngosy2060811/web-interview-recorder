@@ -1,0 +1,10 @@
+=== TRANSCRIPT Q1 ===
+Question: Please introduce yourself and briefly describe your background.
+Time: 2025-12-10T11:26:42.135577+07:00
+
+Hello, my name is Hong-Ngeng. Currently I'm studying data science at National Economic University and I'm really fond of data analysis because that is one of my dream career because I think I can make many money from this.
+
+--- TIMESTAMPS ---
+[00:00.00 -> 00:06.84] Hello, my name is Hong-Ngeng. Currently I'm studying data science at National Economic
+[00:06.84 -> 00:14.76] University and I'm really fond of data analysis because that is one of my dream career because
+[00:14.76 -> 00:16.88] I think I can make many money from this.
