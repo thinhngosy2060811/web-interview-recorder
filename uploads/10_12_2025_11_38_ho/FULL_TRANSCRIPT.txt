@@ -1,0 +1,61 @@
+=== FULL INTERVIEW TRANSCRIPT ===
+
+Candidate: ho
+Session: 2025-12-10T11:38:37.226587+07:00
+
+
+============================================================
+=== TRANSCRIPT Q1 ===
+Question: Please introduce yourself and briefly describe your background.
+Time: 2025-12-10T11:39:03.050628+07:00
+
+Hello, my name is Hong An. Currently I'm studying Data Science at National Economic University.
+
+--- TIMESTAMPS ---
+[00:00.00 -> 00:04.00] Hello, my name is Hong An.
+[00:04.00 -> 00:07.00] Currently I'm studying Data Science at National Economic University.
+
+
+============================================================
+=== TRANSCRIPT Q2 ===
+Question: Why are you interested in working as a Data Analyst?
+Time: 2025-12-10T11:39:09.476248+07:00
+
+Yeah, yeah, yeah, yeah, yeah, yeah.
+
+--- TIMESTAMPS ---
+[00:00.00 -> 00:02.00] Yeah, yeah, yeah, yeah, yeah, yeah.
+
+
+============================================================
+=== TRANSCRIPT Q3 ===
+Question: How do you determine which metrics or KPIs matter for a business problem?
+Time: 2025-12-10T11:39:16.798562+07:00
+
+Yes sir, let's go.
+
+--- TIMESTAMPS ---
+[00:00.00 -> 00:02.00] Yes sir, let's go.
+
+
+============================================================
+=== TRANSCRIPT Q4 ===
+Question: Explain the difference between correlation and causation.
+Time: 2025-12-10T11:39:24.335733+07:00
+
+That's right.
+
+--- TIMESTAMPS ---
+[00:00.00 -> 00:02.00] That's right.
+
+
+============================================================
+=== TRANSCRIPT Q5 ===
+Question: You find a strong correlation in the data. What steps do you take before presenting it?
+Time: 2025-12-10T11:39:37.866551+07:00
+
+Excellent, amazing.
+
+--- TIMESTAMPS ---
+[00:00.00 -> 00:02.48] Excellent, amazing.
+

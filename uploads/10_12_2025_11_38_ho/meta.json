@@ -1,0 +1,248 @@
+{
+  "userName": "ho",
+  "sessionStartTime": "2025-12-10T11:38:37.226587+07:00",
+  "timeZone": "Asia/Bangkok",
+  "interviewQuestions": [
+    {
+      "index": 1,
+      "text": "Please introduce yourself and briefly describe your background."
+    },
+    {
+      "index": 2,
+      "text": "Why are you interested in working as a Data Analyst?"
+    },
+    {
+      "index": 3,
+      "text": "How do you determine which metrics or KPIs matter for a business problem?"
+    },
+    {
+      "index": 4,
+      "text": "Explain the difference between correlation and causation."
+    },
+    {
+      "index": 5,
+      "text": "You find a strong correlation in the data. What steps do you take before presenting it?"
+    }
+  ],
+  "questions": [
+    {
+      "index": 1,
+      "text": "Please introduce yourself and briefly describe your background.",
+      "uploadedAt": "2025-12-10T11:38:58.771998+07:00",
+      "filename": "Q1.webm",
+      "mp4_filename": "Q1.mp4",
+      "size": 1880257,
+      "aiAnalysis": {
+        "focusScore": 99,
+        "warnings": []
+      },
+      "transcriptionStatus": "completed",
+      "transcriptFile": "Q1_transcript.txt",
+      "analyzed_at": "2025-12-10T11:39:11.326879+07:00",
+      "metrics": {
+        "word_count": 15,
+        "focus_score": 99,
+        "speaking_rate_wpm": 128.6,
+        "wpm_category": "good",
+        "silence_ratio_percent": 0.0,
+        "total_pause_seconds": 0.0,
+        "num_pauses": 0,
+        "filler_density_percent": 0.0,
+        "duration_seconds": 7.0,
+        "flagged_as_bad": true,
+        "flag_reasons": [
+          "Too short (15 words < 30)"
+        ]
+      },
+      "ai_evaluation": {
+        "priority": "MEDIUM",
+        "reason": "The candidate's response is extremely brief, providing only their name and current academic status without any further detail or context expected for an introduction. While technically relevant and delivered clearly, the lack of substance fails to create a positive first impression.",
+        "content_score": 4,
+        "communication_score": 7,
+        "overall_impression": "negative",
+        "ai_available": true
+      }
+    },
+    {
+      "index": 2,
+      "text": "Why are you interested in working as a Data Analyst?",
+      "uploadedAt": "2025-12-10T11:39:05.786601+07:00",
+      "filename": "Q2.webm",
+      "mp4_filename": "Q2.mp4",
+      "size": 579368,
+      "aiAnalysis": {
+        "focusScore": 84,
+        "warnings": []
+      },
+      "transcriptionStatus": "completed",
+      "transcriptFile": "Q2_transcript.txt",
+      "analyzed_at": "2025-12-10T11:39:12.833175+07:00",
+      "metrics": {
+        "word_count": 6,
+        "focus_score": 84,
+        "speaking_rate_wpm": 180.0,
+        "wpm_category": "fast",
+        "silence_ratio_percent": 0.0,
+        "total_pause_seconds": 0.0,
+        "num_pauses": 0,
+        "filler_density_percent": 0.0,
+        "duration_seconds": 2.0,
+        "flagged_as_bad": true,
+        "flag_reasons": [
+          "Too short (6 words < 30)",
+          "Low focus (84% < 85%)"
+        ]
+      },
+      "ai_evaluation": {
+        "priority": "LOW",
+        "reason": "The candidate provided no relevant content, failing to answer the question entirely. This indicates a significant lack of communication skills and professionalism.",
+        "content_score": 0,
+        "communication_score": 0,
+        "overall_impression": "negative",
+        "ai_available": true
+      }
+    },
+    {
+      "index": 3,
+      "text": "How do you determine which metrics or KPIs matter for a business problem?",
+      "uploadedAt": "2025-12-10T11:39:13.343385+07:00",
+      "filename": "Q3.webm",
+      "mp4_filename": "Q3.mp4",
+      "size": 658285,
+      "aiAnalysis": {
+        "focusScore": 67,
+        "warnings": []
+      },
+      "transcriptionStatus": "completed",
+      "transcriptFile": "Q3_transcript.txt",
+      "analyzed_at": "2025-12-10T11:39:20.556380+07:00",
+      "metrics": {
+        "word_count": 4,
+        "focus_score": 67,
+        "speaking_rate_wpm": 120.0,
+        "wpm_category": "good",
+        "silence_ratio_percent": 0.0,
+        "total_pause_seconds": 0.0,
+        "num_pauses": 0,
+        "filler_density_percent": 0.0,
+        "duration_seconds": 2.0,
+        "flagged_as_bad": true,
+        "flag_reasons": [
+          "Too short (4 words < 30)",
+          "Low focus (67% < 85%)"
+        ]
+      },
+      "ai_evaluation": {
+        "priority": "LOW",
+        "reason": "The candidate did not answer the question asked, providing only an informal phrase. This indicates a significant lack of content, poor communication, and unprofessionalism.",
+        "content_score": 0,
+        "communication_score": 1,
+        "overall_impression": "negative",
+        "ai_available": true
+      }
+    },
+    {
+      "index": 4,
+      "text": "Explain the difference between correlation and causation.",
+      "uploadedAt": "2025-12-10T11:39:21.170093+07:00",
+      "filename": "Q4.webm",
+      "mp4_filename": "Q4.mp4",
+      "size": 422836,
+      "aiAnalysis": {
+        "focusScore": 61,
+        "warnings": []
+      },
+      "transcriptionStatus": "completed",
+      "transcriptFile": "Q4_transcript.txt",
+      "analyzed_at": "2025-12-10T11:39:24.627006+07:00",
+      "metrics": {
+        "word_count": 2,
+        "focus_score": 61,
+        "speaking_rate_wpm": 60.0,
+        "wpm_category": "slow",
+        "silence_ratio_percent": 0.0,
+        "total_pause_seconds": 0.0,
+        "num_pauses": 0,
+        "filler_density_percent": 0.0,
+        "duration_seconds": 2.0,
+        "flagged_as_bad": true,
+        "flag_reasons": [
+          "Too short (2 words < 30)",
+          "Low focus (61% < 85%)"
+        ]
+      },
+      "ai_evaluation": {
+        "priority": "MEDIUM",
+        "reason": "Lỗi hệ thống AI, cần review thủ công",
+        "content_score": 0,
+        "communication_score": 0,
+        "overall_impression": "neutral",
+        "ai_available": false
+      }
+    },
+    {
+      "index": 5,
+      "text": "You find a strong correlation in the data. What steps do you take before presenting it?",
+      "uploadedAt": "2025-12-10T11:39:34.935740+07:00",
+      "filename": "Q5.webm",
+      "mp4_filename": "Q5.mp4",
+      "size": 853077,
+      "aiAnalysis": {
+        "focusScore": 5,
+        "warnings": []
+      },
+      "transcriptionStatus": "completed",
+      "transcriptFile": "Q5_transcript.txt",
+      "analyzed_at": "2025-12-10T11:39:38.143562+07:00",
+      "metrics": {
+        "word_count": 2,
+        "focus_score": 5,
+        "speaking_rate_wpm": 48.4,
+        "wpm_category": "slow",
+        "silence_ratio_percent": 0.0,
+        "total_pause_seconds": 0.0,
+        "num_pauses": 0,
+        "filler_density_percent": 0.0,
+        "duration_seconds": 2.48,
+        "flagged_as_bad": true,
+        "flag_reasons": [
+          "Too short (2 words < 30)",
+          "Low focus (5% < 85%)"
+        ]
+      },
+      "ai_evaluation": {
+        "priority": "MEDIUM",
+        "reason": "Lỗi hệ thống AI, cần review thủ công",
+        "content_score": 0,
+        "communication_score": 0,
+        "overall_impression": "neutral",
+        "ai_available": false
+      }
+    }
+  ],
+  "questionsCount": 5,
+  "sessionEnded": true,
+  "sessionEndTime": "2025-12-10T11:40:06.691329+07:00",
+  "transcriptsGenerated": 5,
+  "final_ranking_summary": {
+    "total_questions_analyzed": 5,
+    "avg_word_count": 5.8,
+    "avg_filler_density_percent": 0.0,
+    "avg_silence_ratio_percent": 0.0,
+    "avg_wpm": 107.4,
+    "avg_focus_score": 63.2,
+    "avg_content_score": 1.33,
+    "avg_communication_score": 2.67,
+    "final_priority": "LOW",
+    "final_reason": "Ứng viên yếu - Nhiều câu trả lời kém chất lượng",
+    "priority_distribution": {
+      "HIGH": 0,
+      "MEDIUM": 1,
+      "LOW": 2
+    },
+    "overall_ai_summary": {
+      "error": "429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 54.066954975s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/generate_content_free_tier_requests\"\n  quota_id: \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-2.5-flash\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 20\n}\n, retry_delay {\n  seconds: 54\n}\n]"
+    }
+  },
+  "final_ranking_calculated_at": "2025-12-10T11:40:07.046851+07:00"
+}

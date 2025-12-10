@@ -1,0 +1,212 @@
+{
+  "userName": "hong",
+  "sessionStartTime": "2025-12-10T11:25:57.472321+07:00",
+  "timeZone": "Asia/Bangkok",
+  "interviewQuestions": [
+    {
+      "index": 1,
+      "text": "Please introduce yourself and briefly describe your background."
+    },
+    {
+      "index": 2,
+      "text": "Why are you interested in working as a Data Analyst?"
+    },
+    {
+      "index": 3,
+      "text": "Describe the steps you usually take to clean a messy dataset."
+    },
+    {
+      "index": 4,
+      "text": "How would you find duplicate records in a table using SQL?"
+    },
+    {
+      "index": 5,
+      "text": "How would you handle missing or inconsistent data in a dataset?"
+    }
+  ],
+  "questions": [
+    {
+      "index": 1,
+      "text": "Please introduce yourself and briefly describe your background.",
+      "uploadedAt": "2025-12-10T11:26:36.098771+07:00",
+      "filename": "Q1.webm",
+      "mp4_filename": "Q1.mp4",
+      "size": 5524427,
+      "aiAnalysis": {
+        "focusScore": 97,
+        "warnings": []
+      },
+      "transcriptionStatus": "completed",
+      "transcriptFile": "Q1_transcript.txt",
+      "analyzed_at": "2025-12-10T11:26:49.566526+07:00",
+      "metrics": {
+        "word_count": 39,
+        "focus_score": 97,
+        "speaking_rate_wpm": 138.6,
+        "wpm_category": "good",
+        "silence_ratio_percent": 0.0,
+        "total_pause_seconds": 0.0,
+        "num_pauses": 0,
+        "filler_density_percent": 0.0,
+        "duration_seconds": 16.88,
+        "flagged_as_bad": false,
+        "flag_reasons": []
+      },
+      "ai_evaluation": {
+        "priority": "MEDIUM",
+        "reason": "The candidate introduces themselves and their relevant studies, but their stated primary motivation for pursuing data analysis ('make many money') is highly unprofessional and indicates a lack of interview etiquette.",
+        "content_score": 6,
+        "communication_score": 8,
+        "overall_impression": "negative",
+        "ai_available": true
+      }
+    },
+    {
+      "index": 2,
+      "text": "Why are you interested in working as a Data Analyst?",
+      "uploadedAt": "2025-12-10T11:27:28.137450+07:00",
+      "filename": "Q2.webm",
+      "mp4_filename": "Q2.mp4",
+      "size": 11826715,
+      "aiAnalysis": {
+        "focusScore": 98,
+        "warnings": []
+      },
+      "transcriptionStatus": "completed",
+      "transcriptFile": "Q2_transcript.txt",
+      "analyzed_at": "2025-12-10T11:27:45.270107+07:00",
+      "metrics": {
+        "word_count": 70,
+        "focus_score": 98,
+        "speaking_rate_wpm": 117.9,
+        "wpm_category": "good",
+        "silence_ratio_percent": 0.0,
+        "total_pause_seconds": 0.0,
+        "num_pauses": 0,
+        "filler_density_percent": 1.43,
+        "duration_seconds": 35.62,
+        "flagged_as_bad": false,
+        "flag_reasons": []
+      },
+      "ai_evaluation": {
+        "priority": "MEDIUM",
+        "reason": "The candidate expresses relevant interests (diverse departments, skill development, generating insights) but struggles with professional articulation and grammar, making the response unclear and less impactful.",
+        "content_score": 6,
+        "communication_score": 4,
+        "overall_impression": "neutral",
+        "ai_available": true
+      }
+    },
+    {
+      "index": 3,
+      "text": "Describe the steps you usually take to clean a messy dataset.",
+      "uploadedAt": "2025-12-10T11:30:18.990651+07:00",
+      "filename": "Q3.webm",
+      "mp4_filename": "Q3.mp4",
+      "size": 1374690,
+      "aiAnalysis": {
+        "focusScore": 100,
+        "warnings": []
+      },
+      "transcriptionStatus": "completed",
+      "transcriptFile": "Q3_transcript.txt",
+      "analyzed_at": "2025-12-10T11:30:27.776310+07:00",
+      "metrics": {
+        "word_count": 9,
+        "focus_score": 100,
+        "speaking_rate_wpm": 135.0,
+        "wpm_category": "good",
+        "silence_ratio_percent": 0.0,
+        "total_pause_seconds": 0.0,
+        "num_pauses": 0,
+        "filler_density_percent": 0.0,
+        "duration_seconds": 4.0,
+        "flagged_as_bad": true,
+        "flag_reasons": [
+          "Too short (9 words < 30)"
+        ]
+      },
+      "ai_evaluation": {
+        "priority": "LOW",
+        "reason": "The candidate's response is completely irrelevant to the question asked, demonstrating a severe lack of understanding or focus on the interview topic.",
+        "content_score": 0,
+        "communication_score": 1,
+        "overall_impression": "negative",
+        "ai_available": true
+      }
+    },
+    {
+      "index": 4,
+      "text": "How would you find duplicate records in a table using SQL?",
+      "uploadedAt": "2025-12-10T11:31:26.031858+07:00",
+      "filename": "Q4.webm",
+      "mp4_filename": "Q4.mp4",
+      "size": 11034508,
+      "aiAnalysis": {
+        "focusScore": 98,
+        "warnings": []
+      },
+      "transcriptionStatus": "completed",
+      "transcriptFile": "Q4_transcript.txt",
+      "analyzed_at": "2025-12-10T11:31:45.643242+07:00",
+      "metrics": {
+        "word_count": 50,
+        "focus_score": 98,
+        "speaking_rate_wpm": 113.6,
+        "wpm_category": "good",
+        "silence_ratio_percent": 0.0,
+        "total_pause_seconds": 0.0,
+        "num_pauses": 0,
+        "filler_density_percent": 0.0,
+        "duration_seconds": 26.4,
+        "flagged_as_bad": false,
+        "flag_reasons": []
+      },
+      "ai_evaluation": {
+        "priority": "MEDIUM",
+        "reason": "The candidate correctly identifies `GROUP BY` and `HAVING` as key clauses but struggles significantly with clear articulation, providing an incomplete SQL solution, and using grammatically incorrect language. This indicates a potential communication barrier despite some technical understanding.",
+        "content_score": 6,
+        "communication_score": 3,
+        "overall_impression": "neutral",
+        "ai_available": true
+      }
+    }
+  ],
+  "questionsCount": 5,
+  "sessionEnded": true,
+  "sessionEndTime": "2025-12-10T11:32:20.309307+07:00",
+  "transcriptsGenerated": 4,
+  "final_ranking_summary": {
+    "total_questions_analyzed": 4,
+    "avg_word_count": 42,
+    "avg_filler_density_percent": 0.36,
+    "avg_silence_ratio_percent": 0.0,
+    "avg_wpm": 126.28,
+    "avg_focus_score": 98.25,
+    "avg_content_score": 4.5,
+    "avg_communication_score": 4,
+    "final_priority": "MEDIUM",
+    "final_reason": "Ứng viên trung bình - Cần xem xét kỹ hơn",
+    "priority_distribution": {
+      "HIGH": 0,
+      "MEDIUM": 3,
+      "LOW": 1
+    },
+    "overall_ai_summary": {
+      "overall_summary": "The candidate demonstrates good communication metrics with low filler words and no silences, maintaining focus throughout. However, a critical question regarding data cleaning was completely missed, and other responses were generally brief and lacked depth, indicating potential gaps in foundational knowledge for a Data Analyst role.",
+      "strengths": [
+        "Good communication metrics (low filler, no silence, high focus)",
+        "Expressed interest in diverse aspects of data analysis and skill development",
+        "Basic understanding of SQL for identifying duplicates"
+      ],
+      "weaknesses": [
+        "Completely missed a fundamental question on data cleaning",
+        "Answers were generally brief and lacked depth (low average word count)",
+        "Motivation for 'making money' in introduction was unprofessional",
+        "SQL answer was basic and incomplete"
+      ],
+      "recommendation": "NEUTRAL"
+    }
+  },
+  "final_ranking_calculated_at": "2025-12-10T11:32:27.495160+07:00"
+}

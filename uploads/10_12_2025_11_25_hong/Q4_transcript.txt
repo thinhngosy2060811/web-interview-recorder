@@ -1,0 +1,11 @@
+=== TRANSCRIPT Q4 ===
+Question: How would you find duplicate records in a table using SQL?
+Time: 2025-12-10T11:31:35.210857+07:00
+
+So, I will buy few that define uniqueness and use having to filter group with more than one record. For example, I will use code select, column 1, column 2, and from table, group buy and having this clearly highlight duplicate keys and have decide what whether to remove or
+
+--- TIMESTAMPS ---
+[00:00.00 -> 00:09.64] So, I will buy few that define uniqueness and use having to filter group with more than
+[00:09.64 -> 00:10.64] one record.
+[00:10.64 -> 00:20.32] For example, I will use code select, column 1, column 2, and from table, group buy and
+[00:20.32 -> 00:26.40] having this clearly highlight duplicate keys and have decide what whether to remove or
