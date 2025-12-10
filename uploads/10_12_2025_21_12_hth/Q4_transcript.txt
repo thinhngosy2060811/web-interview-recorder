@@ -1,0 +1,13 @@
+=== TRANSCRIPT Q4 ===
+Question: What SQL functions or commands do you use most often, and why?
+Time: 2025-12-10T21:25:05.356727+07:00
+
+So, I rely heavily on window functions because they allow me to compute period over period metrics, rankings and cumulative trends without losing details. Next, I join with half-risk construct and let's take a dataset from relational structure. I also use case-when, CTS and agrariation functions to make queries modular, readable, and optimized. These two help me to translate business questions directly into query logic.
+
+--- TIMESTAMPS ---
+[00:00.00 -> 00:06.80] So, I rely heavily on window functions because they allow me to compute period over period
+[00:06.80 -> 00:10.80] metrics, rankings and cumulative trends without losing details.
+[00:10.80 -> 00:18.00] Next, I join with half-risk construct and let's take a dataset from relational structure.
+[00:18.00 -> 00:25.52] I also use case-when, CTS and agrariation functions to make queries modular, readable,
+[00:25.52 -> 00:26.52] and optimized.
+[00:26.52 -> 00:32.52] These two help me to translate business questions directly into query logic.
