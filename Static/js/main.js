@@ -475,7 +475,7 @@ async function uploadVideo(isRetry = false) {
     } catch (error) {
         uploadRetryCount++;
         
-        istatusEl.textContent = `❌ Upload failed: ${error.message}`;
+        statusEl.textContent = `❌ Upload failed: ${error.message}`;
         statusEl.className = 'status-text status-error';
     
         // Hiện nút Retry
