@@ -187,6 +187,7 @@ function loadQuestion(index) {
     document.getElementById('current-question-text').textContent = QUESTIONS[index];
     document.getElementById('recording-status').textContent = 'Ready';
     document.getElementById('upload-status').textContent = '';
+    document.getElementById('btn-retry-upload').style.display = 'none';
     // Reset đồng hồ
     document.getElementById('timer-display').textContent = "03:00";
     document.getElementById('timer-display').style.color = "#333";
@@ -467,24 +468,21 @@ async function uploadVideo(isRetry = false) {
         statusEl.textContent = `Upload successful: ${data.savedAs} (${(blob.size / 1024 / 1024).toFixed(2)}MB)`;
         statusEl.className = 'status-text status-success';
         
+        document.getElementById('btn-retry-upload').style.display = 'none';
         document.getElementById('btn-next').disabled = false;
         uploadRetryCount = 0;
 
     } catch (error) {
         uploadRetryCount++;
         
-        if (uploadRetryCount < MAX_RETRIES) {
-            const delay = Math.min(1000 * Math.pow(2, uploadRetryCount), 10000);
-            statusEl.textContent = `Upload failed. Retry later ${delay/1000}s... (times ${uploadRetryCount}/${MAX_RETRIES})`;
-            statusEl.className = 'status-text status-warning';
-            
-            setTimeout(() => uploadVideo(true), delay);
-        } else {
-            statusEl.textContent = `Error: ${error.message}. Please try again manually.`;
-            statusEl.className = 'status-text status-error';
+        istatusEl.textContent = `❌ Upload failed: ${error.message}`;
+        statusEl.className = 'status-text status-error';
+    
+        // Hiện nút Retry
+        document.getElementById('btn-retry-upload').style.display = 'inline-block';
+        document.getElementById('btn-next').disabled = true; // Vô hiệu hóa Next
         }
     }
-}
 async function nextQuestion() {
     if (pendingVideoBlob) {
         // Vô hiệu hóa nút để tránh spam
@@ -682,3 +680,16 @@ document.addEventListener('keydown', function(event) {
         alert("⚠️ Copy/Paste is banned in interview proccess");
     }
 });
+async function retryUpload() {
+    // Ẩn nút retry
+    document.getElementById('btn-retry-upload').style.display = 'none';
+    
+    // Kiểm tra còn lượt retry không
+    if (uploadRetryCount >= MAX_RETRIES) {
+        alert('❌ You have used all retry attempts. Please contact support.');
+        return;
+    }
+    
+    // Gọi lại uploadVideo
+    await uploadVideo(true);
+}
