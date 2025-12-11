@@ -21,6 +21,7 @@ let violationStartTime = null;
 let countdownInterval;
 let currentUtterance = null;
 let prepInterval;
+let nextRetryTime = 0;
 
 const VIOLATION_THRESHOLD_MS = 5000;
 const API_BASE = '';

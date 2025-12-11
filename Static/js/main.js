@@ -475,14 +475,35 @@ async function uploadVideo(isRetry = false) {
     } catch (error) {
         uploadRetryCount++;
         
-        statusEl.textContent = `❌ Upload failed: ${error.message}`;
+        const waitSeconds = Math.pow(2, uploadRetryCount); // 2^1=2s, 2^2=4s, 2^3=8s
+        nextRetryTime = Date.now() + (waitSeconds * 1000);
+        statusEl.textContent = `❌ Upload failed. Retry in ${waitSeconds}s...`;
         statusEl.className = 'status-text status-error';
     
-        // Hiện nút Retry
-        document.getElementById('btn-retry-upload').style.display = 'inline-block';
-        document.getElementById('btn-next').disabled = true; // Vô hiệu hóa Next
-        }
+        const retryBtn = document.getElementById('btn-retry-upload');
+        retryBtn.style.display = 'inline-block';
+        retryBtn.disabled = true; // ← DISABLE NÚT
+
+        const countdownInterval = setInterval(() => {
+            const remaining = Math.ceil((nextRetryTime - Date.now()) / 1000);
+    
+            if (remaining <= 0) {
+                clearInterval(countdownInterval);
+
+                if (uploadRetryCount >= MAX_RETRIES) {
+                    retryBtn.textContent = '❌ Max retries';
+                    retryBtn.disabled = true;
+                    statusEl.textContent = '❌ Contact support';
+                } else {
+                    retryBtn.disabled = false;
+                    retryBtn.textContent = '🔄 Retry Upload';
+                }
+            } else {
+                retryBtn.textContent = `⏳ Retry in ${remaining}s`;
+            }
+        }, 1000);
     }
+}
 async function nextQuestion() {
     if (pendingVideoBlob) {
         // Vô hiệu hóa nút để tránh spam
@@ -681,6 +702,12 @@ document.addEventListener('keydown', function(event) {
     }
 });
 async function retryUpload() {
+    const now = Date.now();
+    if (now < nextRetryTime) {
+        const remainingSeconds = Math.ceil((nextRetryTime - now) / 1000);
+        alert(`⏳ Please wait ${remainingSeconds} more seconds`);
+        return; // ← CHẶN nếu chưa đủ thời gian
+    }
     // Ẩn nút retry
     document.getElementById('btn-retry-upload').style.display = 'none';
     
@@ -690,6 +717,6 @@ async function retryUpload() {
         return;
     }
     
-    // Gọi lại uploadVideo
+    document.getElementById('btn-retry-upload').style.display = 'none';
     await uploadVideo(true);
 }
